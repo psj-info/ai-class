@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>신경망 설계실 · 2차시 모델 구성과 평가</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --panel:#FFFFFF; --ink:#17233B; --ink-soft:#4A5A78; --grid:#CFDAEA;
+  --hi:#FFD43B; --hi-ink:#3D2F00; --teal:#12807A; --teal-soft:#DDF1EF; --warn:#B8430B; --warn-soft:#FBE7DC;
+  --l1:#2B6CB0; --l2:#D97706; --l3:#15803D; --l4:#C0262D;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+    --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416; --hi-ink:#2B2100;
+    --l1:#6BA8F0; --l2:#F5A524; --l3:#4ADE80; --l4:#F87171;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+  --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416; --hi-ink:#2B2100;
+  --l1:#6BA8F0; --l2:#F5A524; --l3:#4ADE80; --l4:#F87171;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px); height:100%; scroll-behavior:smooth}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; font-size:16px; line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px; background-attachment:fixed}
+h1,h2,h3{font-family:"Do Hyeon","IBM Plex Sans KR",sans-serif; font-weight:400; line-height:1.2; margin:0}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--teal); outline-offset:2px}
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:10; background:var(--bg); border-bottom:2px solid var(--ink)}
+.topbar-inner{max-width:920px; margin:0 auto; padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.brand{font-family:"Do Hyeon",sans-serif; font-size:1.35rem; margin-right:auto}
+.steps{display:flex; gap:6px; flex-wrap:wrap}
+.steps a{display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 8px; border:2px solid var(--ink); border-radius:6px; text-decoration:none; color:var(--ink); background:var(--panel); font-family:"Do Hyeon",sans-serif; font-size:1.05rem}
+.steps a:hover{background:var(--hi); color:var(--hi-ink)}
+main{max-width:920px; margin:0 auto; padding:24px 16px 64px}
+.hero{padding:28px 0 8px}
+.hero h1{font-size:clamp(2.2rem,6vw,3.4rem)}
+.hero p{max-width:60ch; color:var(--ink-soft); margin:10px 0 0}
+.book{font-size:.85rem; color:var(--ink-soft)}
+section.act{background:var(--panel); border:2px solid var(--ink); border-radius:10px; margin:28px 0; padding:22px 20px 24px; box-shadow:6px 6px 0 var(--ink)}
+.act-head{display:flex; gap:14px; align-items:baseline; margin-bottom:6px}
+.num{font-family:"Do Hyeon",sans-serif; font-size:2.6rem; line-height:1; color:var(--teal); min-width:1.2em}
+.act-head h2{font-size:1.75rem}
+.lead{color:var(--ink-soft); margin:4px 0 16px; max-width:65ch}
+.btn{border:2px solid var(--ink); background:var(--panel); border-radius:6px; padding:7px 14px; cursor:pointer; font-weight:500}
+.btn:hover{background:var(--teal-soft)}
+.btn.primary{background:var(--ink); color:var(--bg)}
+.btn.primary:hover{background:var(--teal); border-color:var(--teal); color:#fff}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.feedback{margin-top:14px; padding:12px 14px; border-radius:8px; border-left:5px solid var(--teal); background:var(--teal-soft)}
+.feedback.bad{border-left-color:var(--warn); background:var(--warn-soft)}
+.hidden{display:none !important}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.9rem; background:var(--bg); border:1px solid var(--grid); border-radius:6px; padding:8px 10px; overflow-x:auto; white-space:pre}
+input[type=range]{accent-color:var(--teal); width:100%}
+input[type=number],input[type=text],select{padding:6px 8px; border:2px solid var(--ink); border-radius:6px; background:var(--panel)}
+.big{font-family:"Do Hyeon",sans-serif; font-size:1.6rem}
+
+/* 1 builder */
+.controls{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:14px}
+.ctl label{display:block; font-weight:500; margin-bottom:2px}
+.ctl .val{font-family:"Do Hyeon",sans-serif; font-size:1.3rem}
+.net-scroll{overflow-x:auto; border:2px solid var(--ink); border-radius:8px; background:var(--bg)}
+svg.net{display:block; min-width:560px; width:100%; height:auto}
+.badge{display:inline-block; background:var(--hi); color:var(--hi-ink); border:2px solid var(--ink); border-radius:6px; padding:4px 10px; font-weight:700}
+.tbl-wrap{overflow-x:auto}
+table.data{border-collapse:collapse; font-variant-numeric:tabular-nums; width:100%; min-width:460px}
+table.data th,table.data td{border-bottom:1px solid var(--grid); padding:6px 10px; text-align:right}
+table.data th{border-bottom:2px solid var(--ink)}
+table.data td:first-child,table.data th:first-child{text-align:left}
+table.data tr.total td{font-weight:700; border-top:2px solid var(--ink); border-bottom:0}
+
+/* 2 activation */
+.two{display:grid; grid-template-columns:1fr 1fr; gap:22px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+svg.plot{width:100%; height:auto; display:block; border:1px solid var(--grid); border-radius:6px; background:var(--bg)}
+.smx{display:grid; grid-template-columns:28px minmax(80px,1fr) minmax(90px,1.2fr) 52px; gap:4px 8px; align-items:center; font-variant-numeric:tabular-nums}
+.smx .d{font-family:"Do Hyeon",sans-serif; font-size:1.2rem; text-align:center}
+.smx .bar{height:16px; background:var(--grid); border-radius:3px; overflow:hidden}
+.smx .bar span{display:block; height:100%; background:var(--teal)}
+.smx .bar span.top{background:var(--hi)}
+.smx .p{text-align:right; font-size:.9rem}
+
+/* 3 chart */
+.chk{display:flex; gap:14px; flex-wrap:wrap; margin:8px 0}
+.chk label{display:flex; align-items:center; gap:6px; cursor:pointer}
+.sw{display:inline-block; width:22px; height:4px; border-radius:2px}
+.readings{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-top:10px}
+.reading{border:2px solid var(--ink); border-radius:6px; padding:6px 10px}
+.reading small{display:block; color:var(--ink-soft)}
+.reading b{font-family:"Do Hyeon",sans-serif; font-size:1.4rem; font-weight:400}
+
+/* 4 compare */
+.cmp{display:grid; gap:10px; margin-top:12px}
+.cmp-row{display:grid; grid-template-columns:150px 1fr 60px; gap:10px; align-items:center; font-variant-numeric:tabular-nums}
+@media (max-width:520px){.cmp-row{grid-template-columns:96px 1fr 52px; font-size:.9rem}}
+.cmp-bar{height:26px; background:var(--grid); border-radius:4px; position:relative; overflow:hidden}
+.cmp-bar span{position:absolute; left:0; top:0; bottom:0; transition:width .6s ease}
+.cmp-bar .mark{position:absolute; top:-3px; bottom:-3px; width:3px; background:var(--warn)}
+
+/* quiz */
+.q{border-top:1px dashed var(--grid); padding:14px 0}
+.q:first-child{border-top:0}
+.q p{margin:0 0 8px; font-weight:500}
+.opts{display:grid; gap:6px}
+.opt{text-align:left; border:2px solid var(--ink); border-radius:6px; padding:8px 12px; background:var(--panel); cursor:pointer}
+.opt:hover{background:var(--teal-soft)}
+.opt.right{background:var(--teal-soft); border-color:var(--teal)}
+.opt.wrong{background:var(--warn-soft); border-color:var(--warn)}
+.opt:disabled{cursor:default}
+.explain{margin-top:8px; font-size:.95rem; color:var(--ink-soft)}
+.score{font-family:"Do Hyeon",sans-serif; font-size:1.6rem; margin-top:10px}
+.logform{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; align-items:end}
+.logform label{font-weight:500; font-size:.92rem}
+.logform input{width:100%}
+.del{border:0; background:none; color:var(--warn); cursor:pointer; text-decoration:underline}
+.stu{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:12px}
+.stu label,.think label{display:block; font-weight:500; font-size:.92rem}
+.stu input{width:100%; padding:8px 10px; border:2px solid var(--ink); border-radius:6px; background:var(--panel)}
+.think{margin-top:10px}
+.think textarea{width:100%; min-height:72px; padding:8px 10px; border:2px solid var(--ink); border-radius:6px; background:var(--panel); font:inherit; color:inherit; resize:vertical}
+.preview{margin-top:16px}
+.preview img{display:block; width:100%; max-width:560px; border:2px solid var(--ink); border-radius:6px; background:#fff}
+.preview p{font-size:.92rem; color:var(--ink-soft)}
+footer{max-width:920px; margin:0 auto; padding:0 16px 40px; color:var(--ink-soft); font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important; scroll-behavior:auto !important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">신경망 설계실</div>
+    <nav class="steps" aria-label="활동 바로가기">
+      <a href="#a1" title="신경망 설계">1</a><a href="#a2" title="활성화 함수">2</a><a href="#a3" title="학습 그래프">3</a>
+      <a href="#a4" title="딥러닝 vs 의사결정트리">4</a><a href="#a5" title="실험 기록표">5</a><a href="#a6" title="확인 문제">6</a><a href="#a7" title="결과 저장">7</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="hero">
+    <h1>784개의 숫자가 0~9 중 하나가 되기까지</h1>
+    <p>지난 시간에 준비한 784칸짜리 데이터를 받아 숫자를 맞히는 신경망을 설계하고, 학습 결과를 읽어 봅니다.</p>
+    <p class="book">교과서 99~101쪽 · 2차시 모델 구성, 학습, 성능 평가</p>
+  </div>
+
+  <!-- 1 -->
+  <section class="act" id="a1">
+    <div class="act-head"><span class="num">1</span><h2>신경망 설계하기</h2></div>
+    <p class="lead">은닉층 개수와 뉴런 수를 바꿔 보세요. 입력층은 픽셀 수(784), 출력층은 레이블 종류(10)로 고정이에요. 선 하나하나가 가중치이고, 뉴런마다 편향이 하나씩 있어요.</p>
+    <p style="margin:0 0 12px"><b>도전:</b> 교과서와 똑같은 모델(파라미터 84,060개)을 만들어 보세요.</p>
+    <div class="controls" id="controls">
+      <div class="ctl"><label for="nLayers">은닉층 개수</label>
+        <select id="nLayers"><option value="1">1개</option><option value="2">2개</option><option value="3">3개</option></select></div>
+    </div>
+    <div class="net-scroll"><svg class="net" id="net" viewBox="0 0 760 380" role="img" aria-label="신경망 구조 그림"></svg></div>
+    <div style="margin-top:14px" class="tbl-wrap"><table class="data" id="paramTbl"></table></div>
+    <p id="match" style="margin:12px 0 0"></p>
+    <div class="code" style="margin-top:12px" id="kerasCode"></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="act" id="a2">
+    <div class="act-head"><span class="num">2</span><h2>활성화 함수 체험</h2></div>
+    <p class="lead">은닉층은 렐루(relu), 출력층은 소프트맥스(softmax)를 써요. 두 함수가 어떻게 값을 바꾸는지 직접 움직여 보세요.</p>
+    <div class="two">
+      <div>
+        <h3 style="font-size:1.35rem">렐루: 음수는 0, 양수는 그대로</h3>
+        <svg class="plot" id="reluPlot" viewBox="0 0 300 200" role="img" aria-label="렐루 함수 그래프"></svg>
+        <label for="reluX" style="display:block; margin-top:8px">입력 x</label>
+        <input type="range" id="reluX" min="-5" max="5" step="0.1" value="2">
+        <p class="big" id="reluOut" style="margin:6px 0 0"></p>
+      </div>
+      <div>
+        <h3 style="font-size:1.35rem">소프트맥스: 점수를 확률로</h3>
+        <p style="margin:4px 0 8px; font-size:.92rem; color:var(--ink-soft)">출력층 10개 뉴런의 점수를 바꾸면 확률이 바뀌어요. 확률을 모두 더하면 항상 100%예요.</p>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" id="smxSure">자신 있을 때</button>
+          <button class="btn" id="smxConf">3과 5가 헷갈릴 때</button>
+          <button class="btn" id="smxFlat">전혀 모를 때</button>
+        </div>
+        <div class="smx" id="smx"></div>
+        <p id="smxPred" style="margin:8px 0 0"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="act" id="a3">
+    <div class="act-head"><span class="num">3</span><h2>학습 그래프 읽기</h2></div>
+    <p class="lead">교과서 100쪽 그래프를 바탕으로 만든 예시예요. 가로축은 반복 학습 횟수(에포크), 세로축은 오차 또는 정확도예요. 오차는 0에, 정확도는 1에 가까울수록 좋아요. 노트북에서 학습이 도는 동안 먼저 읽어 보세요.</p>
+    <div class="chk" id="lineChk"></div>
+    <svg class="plot" id="histPlot" viewBox="0 0 640 300" role="img" aria-label="에포크별 오차와 정확도 그래프"></svg>
+    <label for="epoch" style="display:block; margin-top:10px">에포크 <b id="epochLbl">10</b></label>
+    <input type="range" id="epoch" min="1" max="10" value="10">
+    <div class="readings" id="readings"></div>
+    <div id="histQuiz" style="margin-top:16px"></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="act" id="a4">
+    <div class="act-head"><span class="num">4</span><h2>딥러닝 vs 의사결정트리</h2></div>
+    <p class="lead">같은 데이터로 기계학습 모델인 의사결정트리도 학습시켜요. 딥러닝 결과는 훈련 0.992, 테스트 0.976이에요. 노트북에서 트리를 실행하기 전에, 트리의 테스트 정확도를 먼저 예측해 보세요.</p>
+    <label for="guess">내 예측: 의사결정트리 테스트 정확도 <b id="guessLbl">0.950</b></label>
+    <input type="range" id="guess" min="0.5" max="1" step="0.005" value="0.95">
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="reveal">결과 공개하기</button></div>
+    <div class="cmp" id="cmp"></div>
+    <div class="feedback hidden" id="cmpFb"></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="act" id="a5">
+    <div class="act-head"><span class="num">5</span><h2>실험 기록표</h2></div>
+    <p class="lead">노트북의 실험 셀에서 은닉층 뉴런 수나 에포크를 바꿔 학습한 뒤 결과를 적어 보세요. 기록은 이 브라우저에만 저장돼요.</p>
+    <div class="logform">
+      <div><label for="lgLayers">은닉층 구성</label><input type="text" id="lgLayers" placeholder="예: 100-50"></div>
+      <div><label for="lgEpoch">에포크</label><input type="number" id="lgEpoch" min="1" max="100" placeholder="10"></div>
+      <div><label for="lgTrain">훈련 정확도</label><input type="number" id="lgTrain" step="0.001" min="0" max="1" placeholder="0.992"></div>
+      <div><label for="lgTest">테스트 정확도</label><input type="number" id="lgTest" step="0.001" min="0" max="1" placeholder="0.976"></div>
+      <div><button class="btn primary" id="lgAdd" style="width:100%">기록 추가</button></div>
+    </div>
+    <p id="lgErr" class="feedback bad hidden"></p>
+    <div class="tbl-wrap" style="margin-top:14px"><table class="data" id="lgTbl"></table></div>
+    <p style="font-size:.92rem; color:var(--ink-soft); margin:10px 0 0">생각해 보기: 훈련 정확도와 테스트 정확도의 차이가 가장 큰 실험은 무엇인가요? 그 이유는 무엇일까요?</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="act" id="a6">
+    <div class="act-head"><span class="num">6</span><h2>확인 문제</h2></div>
+    <p class="lead">고르면 바로 정답과 해설이 나와요.</p>
+    <div id="quiz"></div>
+    <div class="score" id="score"></div>
+    <button class="btn" id="quizReset" style="margin-top:8px">다시 풀기</button>
+  </section>
+  <!-- 7 -->
+  <section class="act" id="a7">
+    <div class="act-head"><span class="num">7</span><h2>결과 저장하고 제출하기</h2></div>
+    <p class="lead">학번과 이름을 쓰고 저장하면 오늘 활동 결과가 이미지 한 장으로 만들어져요. 그 이미지를 구글 클래스룸 과제에 첨부해 제출하세요.</p>
+    <div class="stu">
+      <div><label for="sid">학번</label><input id="sid" inputmode="numeric" autocomplete="off" placeholder="예: 10315"></div>
+      <div><label for="sname">이름</label><input id="sname" autocomplete="off" placeholder="예: 홍길동"></div>
+    </div>
+    <div class="think">
+      <label for="thoughtGraph">학습 그래프 해석: 훈련 오차와 테스트 오차는 어떻게 달랐나요?</label>
+      <textarea id="thoughtGraph" maxlength="300" placeholder="내 노트북의 그래프를 보고 적어 보세요"></textarea>
+    </div>
+    <div class="think">
+      <label for="thought">비교: 의사결정트리는 훈련 정확도가 1.000인데 왜 테스트 정확도는 딥러닝보다 낮을까요?</label>
+      <textarea id="thought" maxlength="300" placeholder="내 생각을 적어 보세요"></textarea>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="saveCard">결과 이미지 저장</button></div>
+    <div class="feedback bad hidden" id="saveErr"></div>
+    <div class="preview hidden" id="preview">
+      <img id="cardImg" alt="활동 결과 이미지">
+      <p>파일이 자동으로 내려받아지지 않으면 <a id="cardLink" download>여기를 눌러 저장</a>하거나, 이미지를 길게 누르거나(휴대폰) 오른쪽 클릭해(컴퓨터) 저장하세요.</p>
+    </div>
+  </section>
+</main>
+<footer>Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 2차시 활동용 웹앱</footer>
+
+<script>
+(function(){
+const $=(s)=>document.querySelector(s);
+const st={chosen:{}, guess:null, built:null};
+const css=(v)=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=(n)=>n.toLocaleString('ko-KR');
+const NS='http://www.w3.org/2000/svg';
+
+/* ---------- 1. 설계 ---------- */
+let hidden=[100,50,30];
+const controls=$('#controls');
+function buildControls(){
+  controls.querySelectorAll('.ctl.layer').forEach(e=>e.remove());
+  const n=+$('#nLayers').value;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div'); d.className='ctl layer';
+    d.innerHTML=`<label for="h${i}">은닉층 ${i+1} 뉴런 수 <span class="val" id="hv${i}">${hidden[i]}</span></label><input type="range" id="h${i}" min="10" max="300" step="10" value="${hidden[i]}">`;
+    controls.appendChild(d);
+    d.querySelector('input').oninput=(e)=>{ hidden[i]=+e.target.value; $('#hv'+i).textContent=hidden[i]; drawNet(); };
+  }
+  drawNet();
+}
+$('#nLayers').value='1';
+$('#nLayers').onchange=buildControls;
+function drawNet(){
+  const n=+$('#nLayers').value; const sizes=[784,...hidden.slice(0,n),10];
+  const names=['입력층',...hidden.slice(0,n).map((_,i)=>'은닉층 '+(i+1)),'출력층'];
+  const svg=$('#net'); svg.innerHTML='';
+  const W=760,H=380, top=30, bottom=320; const xs=sizes.map((_,i)=>70+i*(W-140)/(sizes.length-1));
+  const shown=sizes.map((s,i)=> i===sizes.length-1?10:Math.min(8,Math.max(3,Math.round(Math.sqrt(s)/1.6))));
+  const pos=sizes.map((s,i)=>{ const k=shown[i]; const ellip=(i!==sizes.length-1 && s>k); const slots=ellip?k+1:k; const arr=[];
+    for(let j=0;j<slots;j++){ const y=top+(bottom-top)*(slots===1?.5:j/(slots-1)); arr.push({y, gap: ellip && j===Math.floor(slots/2)}); } return arr; });
+  const ink=css('--ink-soft');
+  const g=document.createElementNS(NS,'g'); svg.appendChild(g);
+  for(let i=0;i<sizes.length-1;i++) for(const a of pos[i]) for(const b of pos[i+1]){ if(a.gap||b.gap) continue;
+    const l=document.createElementNS(NS,'line'); l.setAttribute('x1',xs[i]); l.setAttribute('y1',a.y); l.setAttribute('x2',xs[i+1]); l.setAttribute('y2',b.y);
+    l.setAttribute('stroke',ink); l.setAttribute('stroke-opacity','.22'); l.setAttribute('stroke-width','1'); g.appendChild(l); }
+  sizes.forEach((s,i)=>{
+    const fill = i===0? css('--grid') : (i===sizes.length-1? css('--hi') : css('--teal-soft'));
+    pos[i].forEach((p,j)=>{
+      if(p.gap){ const t=document.createElementNS(NS,'text'); t.setAttribute('x',xs[i]); t.setAttribute('y',p.y+6); t.setAttribute('text-anchor','middle'); t.setAttribute('fill',css('--ink')); t.setAttribute('font-size','20'); t.textContent='⋮'; svg.appendChild(t); return; }
+      const c=document.createElementNS(NS,'circle'); c.setAttribute('cx',xs[i]); c.setAttribute('cy',p.y); c.setAttribute('r', i===sizes.length-1?11:10);
+      c.setAttribute('fill',fill); c.setAttribute('stroke',css('--ink')); c.setAttribute('stroke-width','1.5'); svg.appendChild(c);
+      if(i===sizes.length-1){ const t=document.createElementNS(NS,'text'); t.setAttribute('x',xs[i]); t.setAttribute('y',p.y+4.5); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('fill','#3D2F00'); t.textContent=j; svg.appendChild(t); }
+    });
+    const lab=document.createElementNS(NS,'text'); lab.setAttribute('x',xs[i]); lab.setAttribute('y',348); lab.setAttribute('text-anchor','middle'); lab.setAttribute('fill',css('--ink')); lab.setAttribute('font-size','14'); lab.setAttribute('font-family','Do Hyeon, sans-serif'); lab.textContent=names[i]; svg.appendChild(lab);
+    const cnt=document.createElementNS(NS,'text'); cnt.setAttribute('x',xs[i]); cnt.setAttribute('y',368); cnt.setAttribute('text-anchor','middle'); cnt.setAttribute('fill',css('--ink-soft')); cnt.setAttribute('font-size','13'); cnt.textContent=fmt(s)+'개'; svg.appendChild(cnt);
+  });
+  // params
+  let total=0, rows='';
+  for(let i=1;i<sizes.length;i++){ const w=sizes[i-1]*sizes[i], b=sizes[i], p=w+b; total+=p;
+    rows+=`<tr><td>${names[i]} (dense${i>1?'_'+(i-1):''})</td><td>${fmt(sizes[i-1])} × ${fmt(sizes[i])} = ${fmt(w)}</td><td>${fmt(b)}</td><td>${fmt(p)}</td></tr>`; }
+  $('#paramTbl').innerHTML=`<tr><th>층</th><th>가중치 (입력 수 × 노드 수)</th><th>편향</th><th>파라미터 수</th></tr>${rows}<tr class="total"><td>합계</td><td></td><td></td><td>${fmt(total)}</td></tr>`;
+  st.built={sizes:sizes.slice(), total};
+  $('#match').innerHTML = total===84060 ? '<span class="badge">교과서 모델과 같아요! 총 84,060개</span> 노트북의 <code>model.summary()</code> 결과와 비교해 보세요.'
+    : `지금 모델의 파라미터는 <b>${fmt(total)}</b>개예요. 교과서 모델(84,060개)보다 ${total>84060?fmt(total-84060)+'개 많아요':fmt(84060-total)+'개 적어요'}.`;
+  let code='model = Sequential()\n';
+  sizes.slice(1,-1).forEach((s,i)=>{ code+= i===0? `model.add(Dense(${s}, activation='relu', input_dim=features))\n` : `model.add(Dense(${s}, activation='relu'))\n`; });
+  code+="model.add(Dense(labels, activation='softmax'))";
+  $('#kerasCode').textContent=code;
+}
+buildControls();
+
+/* ---------- 2. 활성화 함수 ---------- */
+function drawRelu(){
+  const x=+$('#reluX').value, y=Math.max(0,x); const svg=$('#reluPlot');
+  const sx=v=>30+(v+5)*24, sy=v=>170-v*28;
+  svg.innerHTML=`<line x1="30" y1="${sy(0)}" x2="270" y2="${sy(0)}" stroke="${css('--ink-soft')}"/>
+  <line x1="${sx(0)}" y1="20" x2="${sx(0)}" y2="180" stroke="${css('--ink-soft')}"/>
+  <polyline points="${sx(-5)},${sy(0)} ${sx(0)},${sy(0)} ${sx(5)},${sy(5)}" fill="none" stroke="${css('--teal')}" stroke-width="3"/>
+  <line x1="${sx(x)}" y1="${sy(0)}" x2="${sx(x)}" y2="${sy(y)}" stroke="${css('--warn')}" stroke-dasharray="4 3"/>
+  <circle cx="${sx(x)}" cy="${sy(y)}" r="7" fill="${css('--hi')}" stroke="${css('--ink')}" stroke-width="2"/>
+  <text x="272" y="${sy(0)-6}" font-size="12" fill="${css('--ink-soft')}" text-anchor="end">x</text>
+  <text x="${sx(0)+6}" y="30" font-size="12" fill="${css('--ink-soft')}">y</text>`;
+  $('#reluOut').textContent=`relu(${x.toFixed(1)}) = ${y.toFixed(1)}`;
+}
+$('#reluX').oninput=drawRelu; drawRelu();
+let scores=[0.2,0.1,0.4,1.2,0.3,4.0,0.5,0.2,0.9,0.3];
+const smx=$('#smx');
+function buildSmx(){
+  smx.innerHTML='';
+  scores.forEach((s,i)=>{
+    smx.insertAdjacentHTML('beforeend',`<span class="d">${i}</span><input type="range" min="-3" max="6" step="0.1" value="${s}" aria-label="숫자 ${i} 점수" data-i="${i}"><div class="bar"><span id="sb${i}"></span></div><span class="p" id="sp${i}"></span>`);
+  });
+  smx.querySelectorAll('input').forEach(inp=>inp.oninput=e=>{ scores[+e.target.dataset.i]=+e.target.value; updSmx(); });
+  updSmx();
+}
+function updSmx(){
+  const ex=scores.map(s=>Math.exp(s)); const sum=ex.reduce((a,b)=>a+b,0); const p=ex.map(e=>e/sum); const best=p.indexOf(Math.max(...p));
+  p.forEach((v,i)=>{ const b=$('#sb'+i); b.style.width=(v*100)+'%'; b.className=i===best?'top':''; $('#sp'+i).textContent=(v*100).toFixed(1)+'%'; });
+  $('#smxPred').innerHTML=`모델의 예측: <b>${best}</b> (확률 ${(p[best]*100).toFixed(1)}%)`;
+}
+$('#smxSure').onclick=()=>{ scores=[0.2,0.1,0.4,1.2,0.3,5.5,0.5,0.2,0.9,0.3]; buildSmx(); };
+$('#smxConf').onclick=()=>{ scores=[0.1,0.2,0.3,3.1,0.2,3.0,0.4,0.1,1.0,0.2]; buildSmx(); };
+$('#smxFlat').onclick=()=>{ scores=Array(10).fill(1); buildSmx(); };
+buildSmx();
+
+/* ---------- 3. 학습 그래프 ---------- */
+const H={
+  loss:[0.2674,0.110,0.082,0.066,0.055,0.047,0.042,0.038,0.034,0.0313],
+  val_loss:[0.1435,0.108,0.090,0.101,0.116,0.093,0.087,0.090,0.091,0.0939],
+  accuracy:[0.9228,0.966,0.975,0.980,0.983,0.986,0.987,0.988,0.990,0.9909],
+  val_accuracy:[0.9555,0.967,0.972,0.971,0.970,0.974,0.976,0.976,0.977,0.9780]
+};
+const lines=[{k:'loss',n:'훈련 데이터 오차',c:'--l1'},{k:'val_loss',n:'테스트 데이터 오차',c:'--l2'},{k:'accuracy',n:'훈련 데이터 정확도',c:'--l3'},{k:'val_accuracy',n:'테스트 데이터 정확도',c:'--l4'}];
+const on={loss:true,val_loss:true,accuracy:true,val_accuracy:true};
+$('#lineChk').innerHTML=lines.map(l=>`<label><input type="checkbox" data-k="${l.k}" checked><span class="sw" style="background:var(${l.c})"></span>${l.n}</label>`).join('');
+$('#lineChk').querySelectorAll('input').forEach(i=>i.onchange=e=>{on[e.target.dataset.k]=e.target.checked; drawHist();});
+function drawHist(){
+  const ep=+$('#epoch').value; $('#epochLbl').textContent=ep;
+  const L=50,R=620,T=16,B=260; const sx=i=>L+(i)*(R-L)/9, sy=v=>B-v*(B-T);
+  let s='';
+  for(let v=0;v<=1.0001;v+=0.2){ s+=`<line x1="${L}" x2="${R}" y1="${sy(v)}" y2="${sy(v)}" stroke="${css('--grid')}"/><text x="${L-8}" y="${sy(v)+4}" text-anchor="end" font-size="12" fill="${css('--ink-soft')}">${v.toFixed(1)}</text>`; }
+  for(let i=0;i<10;i++) s+=`<text x="${sx(i)}" y="${B+18}" text-anchor="middle" font-size="12" fill="${css('--ink-soft')}">${i+1}</text>`;
+  s+=`<text x="${(L+R)/2}" y="${B+36}" text-anchor="middle" font-size="12" fill="${css('--ink-soft')}">에포크</text>`;
+  s+=`<line x1="${sx(ep-1)}" x2="${sx(ep-1)}" y1="${T}" y2="${B}" stroke="${css('--ink')}" stroke-dasharray="4 4"/>`;
+  lines.forEach(l=>{ if(!on[l.k]) return; const col=css(l.c);
+    s+=`<polyline fill="none" stroke="${col}" stroke-width="2.5" points="${H[l.k].map((v,i)=>sx(i)+','+sy(v)).join(' ')}"/>`;
+    s+=`<circle cx="${sx(ep-1)}" cy="${sy(H[l.k][ep-1])}" r="5" fill="${col}" stroke="${css('--panel')}" stroke-width="2"/>`; });
+  $('#histPlot').innerHTML=s;
+  $('#readings').innerHTML=lines.map(l=>`<div class="reading" style="border-color:var(${l.c})"><small>${l.n}</small><b>${H[l.k][ep-1].toFixed(4)}</b></div>`).join('');
+}
+$('#epoch').oninput=drawHist; drawHist();
+
+/* ---------- quiz helper ---------- */
+function makeQuiz(el, Q, scoreEl){
+  let answered=0, correct=0; if(scoreEl) scoreEl.textContent='';
+  const id=el.id; st.chosen[id]=[];
+  el.innerHTML=Q.map((x,qi)=>`<div class="q"><p>${Q.length>1?(qi+1)+'. ':''}${x.q}</p><div class="opts">${x.o.map((o,oi)=>`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}</div><div class="explain hidden"></div></div>`).join('');
+  el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const qi=+b.dataset.q, oi=+b.dataset.o; const box=b.closest('.q'); const btns=box.querySelectorAll('.opt');
+    st.chosen[id][qi]=oi; btns.forEach(x=>x.disabled=true); btns[Q[qi].a].classList.add('right'); if(oi!==Q[qi].a) b.classList.add('wrong'); else correct++;
+    answered++; const ex=box.querySelector('.explain'); ex.classList.remove('hidden'); ex.textContent=(oi===Q[qi].a?'정답이에요. ':'정답은 '+(Q[qi].a+1)+'번 보기예요. ')+Q[qi].e;
+    if(scoreEl && answered===Q.length) scoreEl.textContent=`${Q.length}문제 중 ${correct}문제 맞혔어요`;
+  });
+}
+const HQ=[
+  {q:'에포크 1→10 동안 꾸준히 줄어드는 선은?', o:['훈련 데이터 오차','테스트 데이터 오차','둘 다 똑같이 줄어든다'], a:0, e:'훈련 오차는 계속 내려가지만 테스트 오차는 3에포크 이후 0.09~0.12 사이에서 오르내려요.'},
+  {q:'훈련 오차는 계속 줄어드는데 테스트 오차가 다시 커진다면 무슨 신호일까?', o:['학습이 아직 시작되지 않았다','과적합이 시작되고 있다','데이터가 정규화되지 않았다'], a:1, e:'훈련 데이터에만 지나치게 맞춰지면 새 데이터에서는 성능이 떨어져요. 그래서 검증 데이터로 매 에포크를 확인해요.'}
+];
+makeQuiz($('#histQuiz'),HQ);
+
+/* ---------- 4. 비교 ---------- */
+$('#guess').oninput=e=>$('#guessLbl').textContent=(+e.target.value).toFixed(3);
+const R=[{n:'딥러닝 훈련',v:.992,c:'--l1'},{n:'딥러닝 테스트',v:.976,c:'--l1'},{n:'트리 훈련',v:1.0,c:'--l2'},{n:'트리 테스트',v:.878,c:'--l2'}];
+function drawCmp(show){
+  const g=+$('#guess').value;
+  $('#cmp').innerHTML=R.map((r,i)=>{ const hide=!show && i>=2; const w=hide?0:((r.v-0.5)/0.5*100);
+    return `<div class="cmp-row"><span>${r.n}</span><div class="cmp-bar"><span style="width:${w}%; background:var(${r.c}); opacity:${i%2?1:.55}"></span>${i===3?`<div class="mark" style="left:calc(${(g-0.5)/0.5*100}% - 1px)" title="내 예측"></div>`:''}</div><b>${hide?'?':r.v.toFixed(3)}</b></div>`; }).join('')
+    + '<p style="font-size:.85rem; color:var(--ink-soft); margin:0">막대는 0.5~1.0 범위로 그렸어요. 주황 세로선은 내 예측이에요.</p>';
+}
+drawCmp(false);
+$('#guess').addEventListener('input',()=>drawCmp(false));
+$('#reveal').onclick=()=>{ drawCmp(true); const g=+$('#guess').value; if(st.guess===null) st.guess=g; const fb=$('#cmpFb'); fb.classList.remove('hidden');
+  fb.innerHTML=`내 예측 ${g.toFixed(3)}, 실제 0.878 (차이 ${Math.abs(g-.878).toFixed(3)}).<br>트리는 훈련 정확도가 <b>1.000</b>으로 딥러닝(0.992)보다 높지만, 테스트에서는 <b>0.878</b>로 딥러닝(0.976)보다 크게 떨어져요. 훈련 데이터를 통째로 외워 버린 <b>과적합</b>이에요.<br>생각해 보기: 시험 문제를 외운 학생과 원리를 이해한 학생 중 누가 새 문제를 더 잘 풀까요?`; };
+
+/* ---------- 5. 실험 기록 ---------- */
+const KEY='nn-lab-log-v1';
+let log=[];
+try{ const s=localStorage.getItem(KEY); if(s) log=JSON.parse(s)||[]; }catch(e){ log=[]; }
+if(!Array.isArray(log)) log=[];
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(log)); }catch(e){} }
+function drawLog(){
+  const t=$('#lgTbl');
+  const base=`<tr><td>100-50 (교과서)</td><td>10</td><td>0.992</td><td>0.976</td><td>0.016</td><td></td></tr>`;
+  t.innerHTML='<tr><th>은닉층 구성</th><th>에포크</th><th>훈련 정확도</th><th>테스트 정확도</th><th>차이</th><th></th></tr>'+base+
+    log.map((r,i)=>`<tr><td>${r.layers.replace(/[<>&"]/g,'')}</td><td>${r.epoch}</td><td>${r.train.toFixed(3)}</td><td>${r.test.toFixed(3)}</td><td>${(r.train-r.test).toFixed(3)}</td><td><button class="del" data-i="${i}">삭제</button></td></tr>`).join('');
+  t.querySelectorAll('.del').forEach(b=>b.onclick=()=>{ log.splice(+b.dataset.i,1); save(); drawLog(); });
+}
+$('#lgAdd').onclick=()=>{
+  const layers=$('#lgLayers').value.trim(), epoch=+$('#lgEpoch').value, train=+$('#lgTrain').value, test=+$('#lgTest').value; const err=$('#lgErr');
+  if(!layers || !epoch || $('#lgTrain').value==='' || $('#lgTest').value==='' || train<0||train>1||test<0||test>1){ err.classList.remove('hidden'); err.textContent='네 칸을 모두 채워 주세요. 정확도는 0~1 사이 소수로 적어요(예: 0.976).'; return; }
+  err.classList.add('hidden'); log.push({layers:layers.slice(0,30),epoch,train,test}); save(); drawLog();
+  ['#lgLayers','#lgEpoch','#lgTrain','#lgTest'].forEach(s=>$(s).value='');
+};
+drawLog();
+
+/* ---------- 6. 확인 문제 ---------- */
+const Q=[
+  {q:'출력층 뉴런을 10개로 둔 이유는?', o:['은닉층이 10개라서','레이블(0~9)의 종류가 10개라서','에포크가 10이라서','이미지가 10장이라서'], a:1, e:'출력층 뉴런 수는 분류할 레이블 종류의 수와 같아요.'},
+  {q:'뉴런 100개 층 다음에 뉴런 50개 층이 있을 때, 50개 층의 파라미터 수는?', o:['150','5,000','5,050','5,100'], a:2, e:'가중치 100 × 50 = 5,000에 편향 50을 더해 5,050개예요.'},
+  {q:'다중 분류 모델의 출력층에 주로 쓰는 활성화 함수는?', o:['렐루','시그모이드','소프트맥스','계단 함수'], a:2, e:'소프트맥스는 출력값을 합이 1인 확률로 바꿔 줘요. 이진 분류 출력층에는 시그모이드를 써요.'},
+  {q:'훈련 정확도는 매우 높은데 테스트 정확도가 낮은 상태를 무엇이라 할까?', o:['과적합','정규화','원-핫 인코딩','특징 추출'], a:0, e:'훈련 데이터에만 지나치게 맞춰져 새 데이터에 일반화하지 못하는 상태예요.'},
+  {q:'다중 클래스 분류에서 사용하는 손실함수는?', o:['평균 제곱 오차','범주형 교차 엔트로피','정확도','렐루'], a:1, e:"교과서 코드의 loss='categorical_crossentropy'가 범주형 교차 엔트로피예요."}
+];
+const build=()=>makeQuiz($('#quiz'),Q,$('#score'));
+$('#quizReset').onclick=build; build();
+
+/* ---------- 7. 결과 저장 ---------- */
+function wrap(x,text,maxW){const out=[];String(text).split('\n').forEach(par=>{let line='';par.split(/(\s+)/).forEach(tok=>{ if(!tok) return; const t=line+tok; if(x.measureText(t).width<=maxW){line=t;return;} if(line.trim()){out.push(line.trimEnd()); line='';} tok=tok.replace(/^\s+/,''); for(const ch of tok){ const t2=line+ch; if(x.measureText(t2).width>maxW && line){out.push(line); line=ch;} else line=t2; } }); out.push(line.trimEnd());}); return out;}
+async function renderCard(o){
+  try{ await Promise.all([document.fonts.load('28px "Do Hyeon"'), document.fonts.load('18px "IBM Plex Sans KR"'), document.fonts.load('bold 18px "IBM Plex Sans KR"')]); }catch(e){}
+  const W=900, P=44, LH=29, BODY='18px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', HEAD='26px "Do Hyeon","IBM Plex Sans KR",sans-serif';
+  const meas=document.createElement('canvas').getContext('2d'); meas.font=BODY;
+  const headH = o.digit ? 250 : 210; let h=headH+10; const blocks=[];
+  o.sections.forEach(sec=>{ const lines=[]; sec.lines.forEach(l=>wrap(meas,l,W-2*P-24).forEach(w=>lines.push(w))); blocks.push({h:sec.h, lines}); h+=44+lines.length*LH+22; });
+  h+=50;
+  const c=document.createElement('canvas'); const dpr=2; c.width=W*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,h);
+  x.fillStyle='#17233B'; x.fillRect(0,0,W,10);
+  x.fillStyle='#17233B'; x.font='34px "Do Hyeon",sans-serif'; x.fillText(o.title,P,62);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText(o.subtitle,P,94);
+  x.fillStyle='#17233B'; x.font='bold 22px "IBM Plex Sans KR",sans-serif'; x.fillText(`${o.sid}  ${o.name}`,P,138);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText('저장 시각: '+new Date().toLocaleString('ko-KR'),P,168);
+  if(o.digit){ const cs=6, dx=W-P-28*cs, dy=34;
+    for(let r=0;r<28;r++) for(let cc=0;cc<28;cc++){ const v=o.digit[r*28+cc]; const g=Math.round(255-v/255*232); x.fillStyle=`rgb(${g},${g},${Math.min(255,g+12)})`; x.fillRect(dx+cc*cs,dy+r*cs,cs,cs); }
+    x.strokeStyle='#17233B'; x.lineWidth=2; x.strokeRect(dx,dy,28*cs,28*cs);
+    x.font='15px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.textAlign='center'; x.fillText('내가 그린 숫자',dx+14*cs,dy+28*cs+22); x.textAlign='left'; }
+  let y=headH; x.strokeStyle='#CFDAEA'; x.lineWidth=2; x.beginPath(); x.moveTo(P,y-14); x.lineTo(W-P,y-14); x.stroke();
+  blocks.forEach(b=>{ x.fillStyle='#FFD43B'; x.fillRect(P,y+6,6,26); x.fillStyle='#17233B'; x.font=HEAD; x.fillText(b.h,P+16,y+30); y+=44;
+    x.font=BODY; b.lines.forEach(l=>{ x.fillStyle = /^\s*\d+\.\s*×/.test(l)? '#B8430B' : '#17233B'; x.fillText(l,P+16,y+20); y+=LH; }); y+=22; });
+  x.font='14px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.fillText(o.footer,P,h-24);
+  return c.toDataURL('image/png');
+}
+function quizLines(Q,chosen){ const n=chosen.filter(v=>v!==undefined).length; const ok=Q.filter((q,i)=>chosen[i]===q.a).length;
+  const out=[`점수: ${ok} / ${Q.length}  (푼 문제 ${n}개)`];
+  Q.forEach((q,i)=>{ const c=chosen[i]; out.push(c===undefined? `${i+1}. 풀지 않음` : (c===q.a? `${i+1}. ○ ${q.o[c]}` : `${i+1}. × 내 답: ${q.o[c]}`)); }); return out; }
+async function saveResult(o, prefix){
+  const sid=$('#sid').value.trim(), name=$('#sname').value.trim(), err=$('#saveErr');
+  if(!sid||!name){ err.classList.remove('hidden'); err.textContent='학번과 이름을 모두 써 주세요.'; return; }
+  err.classList.add('hidden'); const btn=$('#saveCard'); btn.disabled=true; btn.textContent='만드는 중…';
+  try{
+    const url=await renderCard(Object.assign({sid,name},o));
+    const file=`${prefix}_${sid}_${name}.png`.replace(/[\\/:*?"<>|\s]+/g,'_');
+    $('#cardImg').src=url; const a=$('#cardLink'); a.href=url; a.download=file; $('#preview').classList.remove('hidden');
+    try{ a.click(); }catch(e){}
+  }catch(e){ err.classList.remove('hidden'); err.textContent='이미지를 만들지 못했어요. 다시 눌러 보세요.'; }
+  btn.disabled=false; btn.textContent='결과 이미지 저장';
+}
+
+
+$('#saveCard').onclick=()=>{
+  const b=st.built, arch=b? b.sizes.join(' → ') : '-';
+  const okBook = b && b.total===84060;
+  const lg = log.length? log.map(r=>`${r.layers} / 에포크 ${r.epoch} / 훈련 ${r.train.toFixed(3)} / 테스트 ${r.test.toFixed(3)} / 차이 ${(r.train-r.test).toFixed(3)}`) : ['기록 없음'];
+  saveResult({ title:'신경망 설계실 · 2차시 활동 결과', subtitle:'모델 구성, 학습, 성능 평가 (교과서 99~101쪽)', digit:null,
+    footer:'Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 2차시',
+    sections:[
+      {h:'활동 1  신경망 설계', lines:[`마지막으로 만든 구조: ${arch}`, `파라미터 수: ${b? b.total.toLocaleString('ko-KR'):'-'}개 ${okBook? '(교과서 모델 완성)':'(교과서 모델 84,060개와 다름)'}`]},
+      {h:'활동 3  학습 그래프 읽기', lines: quizLines(HQ, st.chosen.histQuiz||[])},
+      {h:'활동 4  의사결정트리 정확도 예측', lines:[ st.guess===null? '공개하지 않음' : `내 예측 ${st.guess.toFixed(3)} → 실제 0.878 (차이 ${Math.abs(st.guess-0.878).toFixed(3)})` ]},
+      {h:'활동 5  실험 기록', lines: lg},
+      {h:'활동 6  확인 문제', lines: quizLines(Q, st.chosen.quiz||[])},
+      {h:'학습 그래프 해석', lines:[ $('#thoughtGraph').value.trim() || '(쓰지 않음)' ]},
+      {h:'딥러닝과 의사결정트리 비교', lines:[ $('#thought').value.trim() || '(쓰지 않음)' ]}
+    ]}, '2차시'); };
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ drawNet(); drawRelu(); drawHist(); });
+})();
+</script>
+</body>
+</html>

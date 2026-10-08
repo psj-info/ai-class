@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>픽셀 실험실 · 1차시 딥러닝 데이터 준비</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --panel:#FFFFFF; --ink:#17233B; --ink-soft:#4A5A78; --grid:#CFDAEA;
+  --hi:#FFD43B; --hi-ink:#3D2F00; --teal:#12807A; --teal-soft:#DDF1EF; --warn:#B8430B; --warn-soft:#FBE7DC;
+  --band-a:#BFD3F0; --band-b:#F6D98A; --cell-empty:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+    --hi:#FFD43B; --hi-ink:#2B2100; --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416;
+    --band-a:#2D4E7E; --band-b:#7A6220; --cell-empty:#0B1220;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+  --hi:#FFD43B; --hi-ink:#2B2100; --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416;
+  --band-a:#2D4E7E; --band-b:#7A6220; --cell-empty:#0B1220;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px); height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:16px; line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px; background-attachment:fixed;
+}
+img{max-width:100%}
+h1,h2,h3{font-family:"Do Hyeon","IBM Plex Sans KR",sans-serif; font-weight:400; line-height:1.2; margin:0}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--teal); outline-offset:2px}
+
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:10; background:var(--bg); border-bottom:2px solid var(--ink)}
+.topbar-inner{max-width:920px; margin:0 auto; padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.brand{font-family:"Do Hyeon",sans-serif; font-size:1.35rem; margin-right:auto}
+.steps{display:flex; gap:6px; flex-wrap:wrap}
+.steps a{display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 8px;
+  border:2px solid var(--ink); border-radius:6px; text-decoration:none; color:var(--ink); background:var(--panel);
+  font-family:"Do Hyeon",sans-serif; font-size:1.05rem}
+.steps a:hover{background:var(--hi); color:var(--hi-ink)}
+
+main{max-width:920px; margin:0 auto; padding:24px 16px 64px}
+.hero{padding:28px 0 8px}
+.hero h1{font-size:clamp(2.2rem,6vw,3.4rem)}
+.hero p{max-width:60ch; color:var(--ink-soft); margin:10px 0 0}
+
+section.act{background:var(--panel); border:2px solid var(--ink); border-radius:10px; margin:28px 0; padding:22px 20px 24px;
+  box-shadow:6px 6px 0 var(--ink)}
+.act-head{display:flex; gap:14px; align-items:baseline; margin-bottom:6px}
+.num{font-family:"Do Hyeon",sans-serif; font-size:2.6rem; line-height:1; color:var(--teal); min-width:1.2em}
+.act-head h2{font-size:1.75rem}
+.lead{color:var(--ink-soft); margin:4px 0 16px; max-width:65ch}
+.book{font-size:.85rem; color:var(--ink-soft)}
+
+.btn{border:2px solid var(--ink); background:var(--panel); border-radius:6px; padding:7px 14px; cursor:pointer; font-weight:500}
+.btn:hover{background:var(--teal-soft)}
+.btn.primary{background:var(--ink); color:var(--bg)}
+.btn.primary:hover{background:var(--teal); border-color:var(--teal); color:#fff}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+.feedback{margin-top:14px; padding:12px 14px; border-radius:8px; border-left:5px solid var(--teal); background:var(--teal-soft)}
+.feedback.bad{border-left-color:var(--warn); background:var(--warn-soft)}
+.hidden{display:none !important}
+
+/* activity 1 */
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:14px}
+.card{border:2px solid var(--ink); border-radius:8px; padding:12px; background:var(--panel); cursor:pointer; text-align:left}
+.card[aria-pressed="true"]{background:var(--hi); color:var(--hi-ink)}
+.card.good{outline:3px solid var(--teal)} .card.badpick{outline:3px solid var(--warn)}
+.card b{display:block; font-size:1.05rem}
+.card small{color:inherit; opacity:.75}
+.flow{display:grid; gap:10px; margin-top:16px}
+.flow-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.flow-row .tag{font-family:"Do Hyeon",sans-serif; font-size:1.2rem; width:70px}
+.box{border:2px solid var(--ink); border-radius:6px; padding:5px 10px; background:var(--panel); font-size:.95rem}
+.box.human{background:var(--warn-soft)} .box.auto{background:var(--teal-soft)}
+.arrow{color:var(--ink-soft)}
+
+/* activity 2 */
+.draw-wrap{display:grid; grid-template-columns:minmax(0,392px) 1fr; gap:20px; align-items:start}
+@media (max-width:720px){.draw-wrap{grid-template-columns:1fr}}
+canvas.grid{width:100%; max-width:392px; aspect-ratio:1/1; border:2px solid var(--ink); border-radius:6px; touch-action:none; cursor:crosshair; display:block; background:var(--cell-empty)}
+.mag{border-collapse:collapse; font-variant-numeric:tabular-nums; margin-top:8px}
+.mag td{width:46px; height:34px; text-align:center; border:1px solid var(--grid); font-size:.9rem}
+.mag td.center{outline:3px solid var(--teal); outline-offset:-3px; font-weight:700}
+.readout{font-size:1.05rem; margin:4px 0 0}
+.readout strong{font-family:"Do Hyeon",sans-serif; font-size:1.4rem}
+
+/* activity 3 */
+.strip-scroll{overflow-x:auto; border:2px solid var(--ink); border-radius:6px; background:var(--cell-empty)}
+canvas.strip{display:block; height:64px}
+.legend{display:flex; gap:14px; font-size:.9rem; color:var(--ink-soft); margin:8px 0 0; flex-wrap:wrap}
+.sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:4px}
+.bigcalc{font-family:"Do Hyeon",sans-serif; font-size:1.6rem}
+input[type=number]{width:110px; padding:6px 8px; border:2px solid var(--ink); border-radius:6px; background:var(--panel)}
+input[type=range]{accent-color:var(--teal); width:100%; max-width:360px}
+
+/* tables */
+.tbl-wrap{overflow-x:auto}
+table.data{border-collapse:collapse; font-variant-numeric:tabular-nums; min-width:420px}
+table.data th,table.data td{border-bottom:1px solid var(--grid); padding:6px 12px; text-align:right}
+table.data th{font-weight:700; text-align:right; border-bottom:2px solid var(--ink)}
+table.data td:first-child,table.data th:first-child{text-align:left}
+
+/* activity 5 */
+.digits{display:flex; gap:6px; flex-wrap:wrap}
+.digits button{width:44px; height:44px; border:2px solid var(--ink); border-radius:6px; background:var(--panel); font-family:"Do Hyeon",sans-serif; font-size:1.4rem; cursor:pointer}
+.digits button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.vec{display:flex; gap:4px; margin:14px 0 4px; flex-wrap:wrap}
+.vec div{width:46px; text-align:center}
+.vec .v{height:46px; border:2px solid var(--ink); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:"Do Hyeon",sans-serif; font-size:1.4rem; background:var(--panel)}
+.vec .v.on{background:var(--hi); color:var(--hi-ink)}
+.vec .i{font-size:.8rem; color:var(--ink-soft)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.92rem; background:var(--bg); border:1px solid var(--grid); border-radius:6px; padding:8px 10px; overflow-x:auto; white-space:pre}
+
+/* quiz */
+.q{border-top:1px dashed var(--grid); padding:14px 0}
+.q:first-child{border-top:0}
+.q p{margin:0 0 8px; font-weight:500}
+.opts{display:grid; gap:6px}
+.opt{text-align:left; border:2px solid var(--ink); border-radius:6px; padding:8px 12px; background:var(--panel); cursor:pointer}
+.opt:hover{background:var(--teal-soft)}
+.opt.right{background:var(--teal-soft); border-color:var(--teal)}
+.opt.wrong{background:var(--warn-soft); border-color:var(--warn)}
+.opt:disabled{cursor:default}
+.explain{margin-top:8px; font-size:.95rem; color:var(--ink-soft)}
+.score{font-family:"Do Hyeon",sans-serif; font-size:1.6rem; margin-top:10px}
+
+.stu{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:12px}
+.stu label,.think label{display:block; font-weight:500; font-size:.92rem}
+.stu input{width:100%; padding:8px 10px; border:2px solid var(--ink); border-radius:6px; background:var(--panel)}
+.think textarea{width:100%; min-height:72px; padding:8px 10px; border:2px solid var(--ink); border-radius:6px; background:var(--panel); font:inherit; color:inherit; resize:vertical}
+.preview{margin-top:16px}
+.preview img{display:block; width:100%; max-width:560px; border:2px solid var(--ink); border-radius:6px; background:#fff}
+.preview p{font-size:.92rem; color:var(--ink-soft)}
+footer{max-width:920px; margin:0 auto; padding:0 16px 40px; color:var(--ink-soft); font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important; scroll-behavior:auto !important}}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">픽셀 실험실</div>
+    <nav class="steps" aria-label="활동 바로가기">
+      <a href="#a1" title="특징 고르기">1</a><a href="#a2" title="숫자 그리기">2</a><a href="#a3" title="1차원 변환">3</a>
+      <a href="#a4" title="정규화">4</a><a href="#a5" title="원-핫 인코딩">5</a><a href="#a6" title="확인 문제">6</a><a href="#a7" title="결과 저장">7</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>손 글씨 한 장은 784개의 숫자예요</h1>
+    <p>딥러닝 모델은 그림을 볼 수 없어요. 숫자만 받아요. 오늘은 손 글씨 이미지를 모델이 먹을 수 있는 숫자로 바꾸는 과정을 직접 해 봅니다.</p>
+    <p class="book">교과서 96~98쪽 · 1차시 딥러닝 이해와 데이터 준비</p>
+  </div>
+
+  <!-- 1 -->
+  <section class="act" id="a1">
+    <div class="act-head"><span class="num">1</span><h2>특징은 누가 고를까?</h2></div>
+    <p class="lead">자동차 연비를 예측하는 인공지능을 만든다고 해 봐요. 학습에 넣을 정보(특징)를 골라 보세요.</p>
+    <div class="cards" id="featCards"></div>
+    <div class="row"><button class="btn primary" id="featCheck">골랐어요, 확인하기</button><button class="btn" id="featReset">다시 고르기</button></div>
+    <div class="feedback hidden" id="featFb"></div>
+    <div class="hidden" id="featNext">
+      <p style="margin:18px 0 4px"><b>그럼 손 글씨 숫자 사진은요?</b> 784개의 점 중에 어떤 점이 "숫자 3다움"을 결정할까요? 사람이 정하기 정말 어렵죠. 그래서 딥러닝은 특징 고르기까지 스스로 해요.</p>
+      <div class="flow">
+        <div class="flow-row"><span class="tag">기계학습</span><span class="box">입력</span><span class="arrow">▶</span><span class="box human">특징 추출 (사람)</span><span class="arrow">▶</span><span class="box">분류</span><span class="arrow">▶</span><span class="box">출력</span></div>
+        <div class="flow-row"><span class="tag">딥러닝</span><span class="box">입력</span><span class="arrow">▶</span><span class="box auto">특징 추출 + 분류 (모델 스스로)</span><span class="arrow">▶</span><span class="box">출력</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="act" id="a2">
+    <div class="act-head"><span class="num">2</span><h2>숫자를 써 보세요</h2></div>
+    <p class="lead">MNIST처럼 가로 28칸, 세로 28칸에 숫자를 하나 써 보세요. 칸 위에 손가락이나 마우스를 올리면 그 칸의 값이 보여요. 여기서 그린 숫자는 활동 3, 4에서 계속 써요.</p>
+    <div class="draw-wrap">
+      <div>
+        <canvas class="grid" id="drawCanvas" aria-label="28×28 그리기 칸"></canvas>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="clearBtn">지우기</button>
+          <button class="btn" data-sample="3">예시 3</button>
+          <button class="btn" data-sample="5">예시 5</button>
+          <button class="btn" data-sample="7">예시 7</button>
+        </div>
+      </div>
+      <div>
+        <p class="readout" id="readout">칸 위에 올려 보세요</p>
+        <table class="mag" id="mag" aria-label="주변 칸의 픽셀 값"></table>
+        <p style="font-size:.92rem; color:var(--ink-soft); margin-top:12px">값은 0~255 사이예요. 교과서의 <code>imshow(cmap='Greys')</code>처럼 값이 클수록 진하게 표시했어요. 칸이 정확히 0이나 255만 있는 게 아니라 가장자리에 중간값(회색)이 생기는 것도 살펴보세요.</p>
+        <p style="font-size:.92rem; margin:6px 0 0">색칠된 칸: <b id="inkCount">0</b>개 / 784개</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="act" id="a3">
+    <div class="act-head"><span class="num">3</span><h2>한 줄로 펼치기 (1차원 변환)</h2></div>
+    <p class="lead">이 모델은 데이터를 한 줄로만 받아요. 28줄을 차례로 이어 붙이면 28 × 28 = 784칸짜리 한 줄이 돼요. 아래 줄무늬 색이 한 줄(행)씩 바뀌는 걸 보세요. 활동 2의 그림 위에 올리면 그 행이 어디로 갔는지 표시돼요.</p>
+    <div class="row" style="margin-bottom:8px">
+      <label for="rowSlider">행 선택</label>
+      <input type="range" id="rowSlider" min="0" max="27" value="10">
+      <span id="rowLabel" class="bigcalc"></span>
+    </div>
+    <div class="strip-scroll" id="stripScroll"><canvas class="strip" id="strip" aria-label="784칸으로 펼친 데이터"></canvas></div>
+    <div class="legend"><span><span class="sw" style="background:var(--band-a)"></span>짝수 행</span><span><span class="sw" style="background:var(--band-b)"></span>홀수 행</span><span><span class="sw" style="background:var(--teal)"></span>선택한 행</span></div>
+    <p id="stripInfo" style="margin:10px 0 0">줄무늬를 누르면 그 칸이 원래 몇 행 몇 열이었는지 알려 줘요.</p>
+    <div class="code" style="margin-top:14px">X_train_flatten = X_train.reshape(60000, -1)   # (60000, 28, 28) → (60000, 784)</div>
+
+    <h3 style="font-size:1.35rem; margin-top:22px">도전: 몇 번째 칸일까?</h3>
+    <p style="margin:6px 0">인덱스는 0부터 세요. <span class="bigcalc" id="idxQ"></span> 픽셀은 784칸 중 몇 번 인덱스일까요?</p>
+    <div class="row"><input type="number" id="idxA" min="0" max="783" aria-label="인덱스 답"><button class="btn primary" id="idxCheck">확인</button><button class="btn" id="idxNew">새 문제</button></div>
+    <div class="feedback hidden" id="idxFb"></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="act" id="a4">
+    <div class="act-head"><span class="num">4</span><h2>0과 1 사이로 맞추기 (정규화)</h2></div>
+    <p class="lead">각 픽셀 값을 최댓값 255로 나누면 모든 값이 0~1 사이가 돼요. 그림은 그대로인데 숫자의 범위만 바뀌어요. 값의 크기가 고르게 맞춰지면 학습이 더 빠르고 안정적이에요.</p>
+    <div class="row" style="margin-bottom:6px">
+      <label for="normSlider">픽셀 값</label>
+      <input type="range" id="normSlider" min="0" max="255" value="128">
+    </div>
+    <p class="bigcalc" id="normCalc" style="margin:4px 0 16px"></p>
+    <p style="margin:0 0 6px"><b>내가 그린 숫자에서 0이 아닌 칸</b> (펼친 순서대로 앞의 10개)</p>
+    <div class="tbl-wrap"><table class="data" id="normTable"></table></div>
+    <p id="normEmpty" class="feedback bad hidden">활동 2에서 숫자를 먼저 그리거나 예시를 불러와 주세요.</p>
+    <div class="code" style="margin-top:14px">X_train_scaler = X_train_flatten.astype('float32') / 255</div>
+  </section>
+
+  <!-- 5 -->
+  <section class="act" id="a5">
+    <div class="act-head"><span class="num">5</span><h2>정답 표시 바꾸기 (원-핫 인코딩)</h2></div>
+    <p class="lead">레이블(정답)을 숫자 그대로 쓰면 모델은 "9는 1보다 크다", "1은 9보다 2와 더 비슷하다"고 오해할 수 있어요. 숫자 모양에는 크기나 순서가 없죠. 그래서 10칸 중 정답 자리 하나만 1로 표시해요.</p>
+    <div class="digits" id="ohDigits" role="group" aria-label="레이블 선택"></div>
+    <div class="vec" id="ohVec"></div>
+    <div class="code" id="ohCode" style="margin-top:10px"></div>
+
+    <h3 style="font-size:1.35rem; margin-top:22px">거꾸로 맞히기</h3>
+    <p style="margin:6px 0">아래 벡터는 어떤 숫자를 원-핫 인코딩한 걸까요?</p>
+    <div class="vec" id="ohQuizVec"></div>
+    <div class="digits" id="ohQuizDigits" role="group" aria-label="답 고르기"></div>
+    <div class="feedback hidden" id="ohQuizFb"></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="act" id="a6">
+    <div class="act-head"><span class="num">6</span><h2>확인 문제</h2></div>
+    <p class="lead">오늘 배운 내용을 확인해 봐요. 고르면 바로 정답과 해설이 나와요.</p>
+    <div id="quiz"></div>
+    <div class="score" id="score"></div>
+    <button class="btn" id="quizReset" style="margin-top:8px">다시 풀기</button>
+  </section>
+  <!-- 7 -->
+  <section class="act" id="a7">
+    <div class="act-head"><span class="num">7</span><h2>결과 저장하고 제출하기</h2></div>
+    <p class="lead">학번과 이름을 쓰고 저장하면 오늘 활동 결과가 이미지 한 장으로 만들어져요. 그 이미지를 구글 클래스룸 과제에 첨부해 제출하세요.</p>
+    <div class="stu">
+      <div><label for="sid">학번</label><input id="sid" inputmode="numeric" autocomplete="off" placeholder="예: 10315"></div>
+      <div><label for="sname">이름</label><input id="sname" autocomplete="off" placeholder="예: 홍길동"></div>
+    </div>
+    <div class="think">
+      <label for="thought">한 문장 쓰기: 데이터를 왜 이렇게(1차원 변환, 정규화, 원-핫 인코딩) 바꿨을까요?</label>
+      <textarea id="thought" maxlength="300" placeholder="내 생각을 적어 보세요"></textarea>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="saveCard">결과 이미지 저장</button></div>
+    <div class="feedback bad hidden" id="saveErr"></div>
+    <div class="preview hidden" id="preview">
+      <img id="cardImg" alt="활동 결과 이미지">
+      <p>파일이 자동으로 내려받아지지 않으면 <a id="cardLink" download>여기를 눌러 저장</a>하거나, 이미지를 길게 누르거나(휴대폰) 오른쪽 클릭해(컴퓨터) 저장하세요.</p>
+    </div>
+  </section>
+</main>
+<footer>Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 1차시 활동용 웹앱</footer>
+
+<script>
+(function(){
+const $ = (s)=>document.querySelector(s);
+const st={feat:null, idx:{tries:0,correct:0}, oh:{tries:0,correct:0}, chosen:[]};
+const css = (v)=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- 1. 특징 고르기 ---------- */
+const feats = [
+  {n:'자동차 무게', d:'kg', good:true, why:'무거울수록 연료를 많이 써요.'},
+  {n:'엔진 배기량', d:'cc', good:true, why:'배기량이 클수록 연료 소모가 커요.'},
+  {n:'자동차 색깔', d:'빨강, 흰색…', good:false, why:'색깔은 연비와 관계가 없어요.'},
+  {n:'출시 연도', d:'년식', good:true, why:'최신 엔진일수록 효율이 좋은 경향이 있어요.'},
+  {n:'차주 이름', d:'홍길동…', good:false, why:'누가 타는지는 연비와 무관해요.'},
+  {n:'마력', d:'hp', good:true, why:'엔진 힘과 연료 소모는 관련이 있어요.'},
+  {n:'번호판 숫자', d:'12가 3456', good:false, why:'번호판은 그냥 식별 번호예요.'},
+  {n:'실린더 수', d:'4, 6, 8기통', good:true, why:'실린더가 많을수록 연료를 많이 써요.'}
+];
+const featCards = $('#featCards');
+feats.forEach((f,i)=>{
+  const b=document.createElement('button'); b.className='card'; b.setAttribute('aria-pressed','false');
+  b.innerHTML=`<b>${f.n}</b><small>${f.d}</small>`;
+  b.onclick=()=>{ if(b.dataset.locked) return; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true'?'false':'true'); };
+  featCards.appendChild(b);
+});
+$('#featCheck').onclick=()=>{
+  const cards=[...featCards.children]; let right=0, wrongs=[];
+  cards.forEach((c,i)=>{
+    const picked=c.getAttribute('aria-pressed')==='true'; const f=feats[i];
+    c.dataset.locked='1'; c.classList.remove('good','badpick');
+    if(picked===f.good) right++;
+    if(picked && !f.good){ c.classList.add('badpick'); wrongs.push(f); }
+    if(f.good) c.classList.add('good');
+  });
+  const fb=$('#featFb'); fb.classList.remove('hidden','bad');
+  let msg=`8개 중 <b>${right}개</b>를 맞게 판단했어요. 초록 테두리가 연비 예측에 필요한 특징이에요.`;
+  if(wrongs.length){ fb.classList.add('bad'); msg+='<br>'+wrongs.map(w=>`<b>${w.n}</b>: ${w.why}`).join('<br>'); }
+  msg+='<br>이렇게 <b>사람이 어떤 특징을 쓸지 정하는 것</b>을 특징 추출이라고 해요. 기계학습에서는 사람이 이 일을 해요.';
+  fb.innerHTML=msg; $('#featNext').classList.remove('hidden'); st.feat=right;
+};
+$('#featReset').onclick=()=>{ [...featCards.children].forEach(c=>{c.setAttribute('aria-pressed','false'); delete c.dataset.locked; c.classList.remove('good','badpick');}); $('#featFb').classList.add('hidden'); };
+
+/* ---------- 공유 데이터: 28×28 ---------- */
+const N=28; const data=new Float32Array(N*N);
+let selRow=10, selCell=-1;
+
+/* ---------- 2. 그리기 ---------- */
+const cv=$('#drawCanvas'); const ctx=cv.getContext('2d');
+function sizeCanvas(c, w, h){
+  const dpr=window.devicePixelRatio||1; c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
+  const x=c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); return x;
+}
+const CELL=14; sizeCanvas(cv, N*CELL, N*CELL);
+function shade(v){ // 0..255 → color, Greys style
+  const empty=css('--cell-empty'); if(v<=0) return empty;
+  const dark = document.documentElement.dataset.theme==='dark' || (document.documentElement.dataset.theme!=='light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const t=v/255;
+  if(dark){ const g=Math.round(30+t*225); return `rgb(${g},${g},${Math.min(255,g+8)})`; }
+  const g=Math.round(255-t*232); return `rgb(${g},${g},${Math.min(255,g+12)})`;
+}
+function drawGrid(){
+  ctx.clearRect(0,0,N*CELL,N*CELL);
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){ ctx.fillStyle=shade(data[r*N+c]); ctx.fillRect(c*CELL,r*CELL,CELL,CELL); }
+  ctx.strokeStyle=css('--grid'); ctx.lineWidth=1;
+  for(let i=0;i<=N;i++){ ctx.beginPath(); ctx.moveTo(i*CELL+.5,0); ctx.lineTo(i*CELL+.5,N*CELL); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i*CELL+.5); ctx.lineTo(N*CELL,i*CELL+.5); ctx.stroke(); }
+  // selected row
+  ctx.strokeStyle=css('--teal'); ctx.lineWidth=3; ctx.strokeRect(1.5, selRow*CELL+1.5, N*CELL-3, CELL-3);
+  if(selCell>=0){ const r=Math.floor(selCell/N), c=selCell%N; ctx.strokeStyle=css('--hi'); ctx.lineWidth=3; ctx.strokeRect(c*CELL+1.5,r*CELL+1.5,CELL-3,CELL-3); }
+}
+function stamp(fx,fy){
+  for(let r=Math.floor(fy-2);r<=Math.ceil(fy+2);r++) for(let c=Math.floor(fx-2);c<=Math.ceil(fx+2);c++){
+    if(r<0||c<0||r>=N||c>=N) continue;
+    const d=Math.hypot(c+.5-fx, r+.5-fy);
+    let v = d<0.7 ? 255 : 255*Math.max(0, 1-(d-0.7)/1.1);
+    v=Math.round(v); const i=r*N+c; if(v>data[i]) data[i]=v;
+  }
+}
+function line(x0,y0,x1,y1){ const steps=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)/0.3)); for(let s=0;s<=steps;s++){ stamp(x0+(x1-x0)*s/steps, y0+(y1-y0)*s/steps); } }
+function toCell(e){ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*N, y:(e.clientY-r.top)/r.height*N}; }
+let drawing=false, last=null;
+cv.addEventListener('pointerdown',e=>{ drawing=true; cv.setPointerCapture(e.pointerId); const p=toCell(e); stamp(p.x,p.y); last=p; refresh(); inspect(p); });
+cv.addEventListener('pointermove',e=>{ const p=toCell(e); if(drawing){ line(last.x,last.y,p.x,p.y); last=p; refresh(); } inspect(p); });
+['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>{drawing=false; last=null;}));
+function inspect(p){
+  const r=Math.floor(p.y), c=Math.floor(p.x); if(r<0||c<0||r>=N||c>=N) return;
+  selRow=r; $('#rowSlider').value=r; selCell=r*N+c;
+  $('#readout').innerHTML=`${r}행 ${c}열 → 값 <strong>${Math.round(data[r*N+c])}</strong>`;
+  let h=''; for(let dr=-2;dr<=2;dr++){ h+='<tr>'; for(let dc=-2;dc<=2;dc++){ const rr=r+dr, cc=c+dc; const inb=rr>=0&&cc>=0&&rr<N&&cc<N; h+=`<td class="${dr===0&&dc===0?'center':''}">${inb?Math.round(data[rr*N+cc]):''}</td>`; } h+='</tr>'; }
+  $('#mag').innerHTML=h; refreshRow(); drawGrid(); drawStrip();
+}
+const samples={
+  '3':[[[8,6],[15,4.5],[19.5,7.5],[17,12],[12.5,13.5]],[[12.5,13.5],[18.5,15],[20,19.5],[16.5,22.5],[8.5,22]]],
+  '5':[[[19.5,5],[10.5,5]],[[10.5,5],[9.5,12.5],[15,11],[19.5,14.5],[19,19.5],[14,22.5],[8,21]]],
+  '7':[[[7.5,6],[20.5,6],[15.5,14],[12,22.5]]]
+};
+document.querySelectorAll('[data-sample]').forEach(b=>b.onclick=()=>{ data.fill(0); samples[b.dataset.sample].forEach(st=>{ for(let i=1;i<st.length;i++) line(st[i-1][0],st[i-1][1],st[i][0],st[i][1]); }); refresh(); });
+$('#clearBtn').onclick=()=>{ data.fill(0); selCell=-1; refresh(); };
+
+/* ---------- 3. 1차원 변환 ---------- */
+const strip=$('#strip'); const SW=6, SH=64; strip.style.width=(N*N*SW)+'px'; let sctx=sizeCanvas(strip, N*N*SW, SH);
+function drawStrip(){
+  sctx.clearRect(0,0,N*N*SW,SH);
+  for(let i=0;i<N*N;i++){
+    const r=Math.floor(i/N);
+    sctx.fillStyle = r===selRow ? css('--teal') : (r%2? css('--band-b'):css('--band-a'));
+    sctx.fillRect(i*SW, SH-14, SW, 14);
+    sctx.fillStyle=shade(data[i]); sctx.fillRect(i*SW, 0, SW, SH-16);
+  }
+  if(selCell>=0){ sctx.strokeStyle=css('--hi'); sctx.lineWidth=2; sctx.strokeRect(selCell*SW+1,1,SW-2,SH-2); }
+}
+function refreshRow(){
+  $('#rowLabel').textContent=`${selRow}행 → 인덱스 ${selRow*N} ~ ${selRow*N+27}`;
+  const sc=$('#stripScroll'); const target=selRow*N*SW - sc.clientWidth/2 + N*SW/2; sc.scrollLeft=Math.max(0,target);
+}
+$('#rowSlider').oninput=e=>{ selRow=+e.target.value; refreshRow(); drawGrid(); drawStrip(); };
+strip.addEventListener('click',e=>{ const r=strip.getBoundingClientRect(); const i=Math.min(N*N-1,Math.max(0,Math.floor((e.clientX-r.left)/SW))); selCell=i; selRow=Math.floor(i/N); $('#rowSlider').value=selRow;
+  $('#stripInfo').innerHTML=`인덱스 <b>${i}</b>번 칸은 원래 <b>${Math.floor(i/N)}행 ${i%N}열</b>이었어요. (${Math.floor(i/N)} × 28 + ${i%N} = ${i}) 값: <b>${Math.round(data[i])}</b>`;
+  refreshRow(); drawGrid(); drawStrip(); });
+let qr=0,qc=0;
+function newIdx(){ qr=Math.floor(Math.random()*28); qc=Math.floor(Math.random()*28); $('#idxQ').textContent=`${qr}행 ${qc}열`; $('#idxA').value=''; $('#idxFb').classList.add('hidden'); }
+$('#idxNew').onclick=newIdx;
+$('#idxCheck').onclick=()=>{ const a=+$('#idxA').value; const ans=qr*28+qc; const fb=$('#idxFb'); fb.classList.remove('hidden'); if($('#idxA').value!==''){ st.idx.tries++; if(a===ans) st.idx.correct++; }
+  if($('#idxA').value!=='' && a===ans){ fb.classList.remove('bad'); fb.innerHTML=`정답! ${qr} × 28 + ${qc} = <b>${ans}</b>. 앞에 ${qr}줄(줄마다 28칸)이 먼저 놓이고, 그 다음 ${qc}칸을 더 가면 돼요.`; selCell=ans; selRow=qr; $('#rowSlider').value=qr; refreshRow(); drawGrid(); drawStrip(); }
+  else { fb.classList.add('bad'); fb.innerHTML='다시 생각해 봐요. 힌트: 앞에 있는 줄 수 × 28 + 열 번호'; } };
+newIdx();
+
+/* ---------- 4. 정규화 ---------- */
+function updNorm(){ const v=+$('#normSlider').value; $('#normCalc').textContent=`${v} ÷ 255 = ${(v/255).toFixed(3)}`; }
+$('#normSlider').oninput=updNorm; updNorm();
+function drawNormTable(){
+  const nz=[]; for(let i=0;i<N*N && nz.length<10;i++) if(data[i]>0) nz.push(i);
+  const t=$('#normTable');
+  if(!nz.length){ t.innerHTML=''; $('#normEmpty').classList.remove('hidden'); return; }
+  $('#normEmpty').classList.add('hidden');
+  t.innerHTML='<tr><th>인덱스</th><th>원래 위치</th><th>원래 값 (0~255)</th><th>정규화 값 (0~1)</th></tr>'+
+    nz.map(i=>`<tr><td>${i}</td><td>${Math.floor(i/N)}행 ${i%N}열</td><td>${Math.round(data[i])}</td><td>${(Math.round(data[i])/255).toFixed(4)}</td></tr>`).join('');
+}
+
+/* ---------- 5. 원-핫 ---------- */
+function vecHTML(k){ let h=''; for(let i=0;i<10;i++) h+=`<div><div class="v ${i===k?'on':''}">${i===k?1:0}</div><div class="i">${i}</div></div>`; return h; }
+const ohD=$('#ohDigits'); let ohSel=5;
+for(let i=0;i<10;i++){ const b=document.createElement('button'); b.textContent=i; b.onclick=()=>{ohSel=i; drawOH();}; ohD.appendChild(b); }
+function drawOH(){ [...ohD.children].forEach((b,i)=>b.setAttribute('aria-pressed', i===ohSel?'true':'false'));
+  $('#ohVec').innerHTML=vecHTML(ohSel);
+  $('#ohCode').textContent=`레이블 ${ohSel}  →  [${Array.from({length:10},(_,i)=>i===ohSel?'1.':'0.').join(', ')}]`; }
+drawOH();
+let ohAns=0; const ohQD=$('#ohQuizDigits');
+for(let i=0;i<10;i++){ const b=document.createElement('button'); b.textContent=i; b.onclick=()=>{ const fb=$('#ohQuizFb'); fb.classList.remove('hidden'); st.oh.tries++; if(i===ohAns) st.oh.correct++;
+  if(i===ohAns){ fb.classList.remove('bad'); fb.innerHTML=`정답! 1이 있는 자리가 <b>${ohAns}</b>번이에요. 다음 문제가 나왔어요.`; newOH(); }
+  else { fb.classList.add('bad'); fb.innerHTML='아니에요. 1이 몇 번 자리에 있는지 아래 번호를 보세요.'; } }; ohQD.appendChild(b); }
+function newOH(){ let n; do{ n=Math.floor(Math.random()*10);}while(n===ohAns); ohAns=n; $('#ohQuizVec').innerHTML=vecHTML(ohAns); }
+newOH();
+
+/* ---------- 6. 확인 문제 ---------- */
+const Q=[
+  {q:'딥러닝이 일반적인 기계학습과 가장 크게 다른 점은?', o:['데이터가 필요 없다','특징 추출을 스스로 한다','분류만 할 수 있다','사람이 규칙을 모두 입력한다'], a:1, e:'기계학습은 사람이 특징을 골라 주지만, 딥러닝은 특징 추출부터 분류까지 한 번에 해요.'},
+  {q:'28×28 이미지를 1차원으로 펴면 길이는?', o:['56','28','784','2828'], a:2, e:'28줄 × 28칸 = 784칸이에요.'},
+  {q:'픽셀 값 51을 255로 나누어 정규화하면?', o:['0.2','0.5','5.1','51'], a:0, e:'51 ÷ 255 = 0.2'},
+  {q:'레이블 3을 원-핫 인코딩한 것은?', o:['[3]','[0,0,0,1,0,0,0,0,0,0]','[0,0,1,0,0,0,0,0,0,0]','[1,1,1,0,0,0,0,0,0,0]'], a:1, e:'인덱스는 0부터 세므로 3번 자리(네 번째 칸)만 1이에요.'},
+  {q:'레이블을 원-핫 인코딩하는 이유로 알맞은 것은?', o:['데이터 개수를 늘리려고','이미지를 선명하게 하려고','레이블 사이에 크기·순서 관계가 생기지 않게 하려고','학습 시간을 0으로 만들려고'], a:2, e:'숫자 모양에는 크기나 순서가 없으니 모든 레이블을 같은 중요도로 나타내요.'}
+];
+let answered=0, correct=0;
+function buildQuiz(){
+  answered=0; correct=0; st.chosen=[]; $('#score').textContent='';
+  $('#quiz').innerHTML=Q.map((x,qi)=>`<div class="q"><p>${qi+1}. ${x.q}</p><div class="opts">${x.o.map((o,oi)=>`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}</div><div class="explain hidden" id="ex${qi}"></div></div>`).join('');
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const qi=+b.dataset.q, oi=+b.dataset.o; const btns=document.querySelectorAll(`.opt[data-q="${qi}"]`);
+    st.chosen[qi]=oi; btns.forEach(x=>x.disabled=true); btns[Q[qi].a].classList.add('right'); if(oi!==Q[qi].a) b.classList.add('wrong'); else correct++;
+    answered++; const ex=$('#ex'+qi); ex.classList.remove('hidden'); ex.textContent=(oi===Q[qi].a?'정답이에요. ':'정답은 '+(Q[qi].a+1)+'번 보기예요. ')+Q[qi].e;
+    if(answered===Q.length) $('#score').textContent=`${Q.length}문제 중 ${correct}문제 맞혔어요`;
+  });
+}
+$('#quizReset').onclick=buildQuiz; buildQuiz();
+
+
+/* ---------- 7. 결과 저장 ---------- */
+function wrap(x,text,maxW){const out=[];String(text).split('\n').forEach(par=>{let line='';par.split(/(\s+)/).forEach(tok=>{ if(!tok) return; const t=line+tok; if(x.measureText(t).width<=maxW){line=t;return;} if(line.trim()){out.push(line.trimEnd()); line='';} tok=tok.replace(/^\s+/,''); for(const ch of tok){ const t2=line+ch; if(x.measureText(t2).width>maxW && line){out.push(line); line=ch;} else line=t2; } }); out.push(line.trimEnd());}); return out;}
+async function renderCard(o){
+  try{ await Promise.all([document.fonts.load('28px "Do Hyeon"'), document.fonts.load('18px "IBM Plex Sans KR"'), document.fonts.load('bold 18px "IBM Plex Sans KR"')]); }catch(e){}
+  const W=900, P=44, LH=29, BODY='18px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', HEAD='26px "Do Hyeon","IBM Plex Sans KR",sans-serif';
+  const meas=document.createElement('canvas').getContext('2d'); meas.font=BODY;
+  const headH = o.digit ? 250 : 210; let h=headH+10; const blocks=[];
+  o.sections.forEach(sec=>{ const lines=[]; sec.lines.forEach(l=>wrap(meas,l,W-2*P-24).forEach(w=>lines.push(w))); blocks.push({h:sec.h, lines}); h+=44+lines.length*LH+22; });
+  h+=50;
+  const c=document.createElement('canvas'); const dpr=2; c.width=W*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,h);
+  x.fillStyle='#17233B'; x.fillRect(0,0,W,10);
+  x.fillStyle='#17233B'; x.font='34px "Do Hyeon",sans-serif'; x.fillText(o.title,P,62);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText(o.subtitle,P,94);
+  x.fillStyle='#17233B'; x.font='bold 22px "IBM Plex Sans KR",sans-serif'; x.fillText(`${o.sid}  ${o.name}`,P,138);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText('저장 시각: '+new Date().toLocaleString('ko-KR'),P,168);
+  if(o.digit){ const cs=6, dx=W-P-28*cs, dy=34;
+    for(let r=0;r<28;r++) for(let cc=0;cc<28;cc++){ const v=o.digit[r*28+cc]; const g=Math.round(255-v/255*232); x.fillStyle=`rgb(${g},${g},${Math.min(255,g+12)})`; x.fillRect(dx+cc*cs,dy+r*cs,cs,cs); }
+    x.strokeStyle='#17233B'; x.lineWidth=2; x.strokeRect(dx,dy,28*cs,28*cs);
+    x.font='15px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.textAlign='center'; x.fillText('내가 그린 숫자',dx+14*cs,dy+28*cs+22); x.textAlign='left'; }
+  let y=headH; x.strokeStyle='#CFDAEA'; x.lineWidth=2; x.beginPath(); x.moveTo(P,y-14); x.lineTo(W-P,y-14); x.stroke();
+  blocks.forEach(b=>{ x.fillStyle='#FFD43B'; x.fillRect(P,y+6,6,26); x.fillStyle='#17233B'; x.font=HEAD; x.fillText(b.h,P+16,y+30); y+=44;
+    x.font=BODY; b.lines.forEach(l=>{ x.fillStyle = /^\s*\d+\.\s*×/.test(l)? '#B8430B' : '#17233B'; x.fillText(l,P+16,y+20); y+=LH; }); y+=22; });
+  x.font='14px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.fillText(o.footer,P,h-24);
+  return c.toDataURL('image/png');
+}
+function quizLines(Q,chosen){ const n=chosen.filter(v=>v!==undefined).length; const ok=Q.filter((q,i)=>chosen[i]===q.a).length;
+  const out=[`점수: ${ok} / ${Q.length}  (푼 문제 ${n}개)`];
+  Q.forEach((q,i)=>{ const c=chosen[i]; out.push(c===undefined? `${i+1}. 풀지 않음` : (c===q.a? `${i+1}. ○ ${q.o[c]}` : `${i+1}. × 내 답: ${q.o[c]}`)); }); return out; }
+async function saveResult(o, prefix){
+  const sid=$('#sid').value.trim(), name=$('#sname').value.trim(), err=$('#saveErr');
+  if(!sid||!name){ err.classList.remove('hidden'); err.textContent='학번과 이름을 모두 써 주세요.'; return; }
+  err.classList.add('hidden'); const btn=$('#saveCard'); btn.disabled=true; btn.textContent='만드는 중…';
+  try{
+    const url=await renderCard(Object.assign({sid,name},o));
+    const file=`${prefix}_${sid}_${name}.png`.replace(/[\\/:*?"<>|\s]+/g,'_');
+    $('#cardImg').src=url; const a=$('#cardLink'); a.href=url; a.download=file; $('#preview').classList.remove('hidden');
+    try{ a.click(); }catch(e){}
+  }catch(e){ err.classList.remove('hidden'); err.textContent='이미지를 만들지 못했어요. 다시 눌러 보세요.'; }
+  btn.disabled=false; btn.textContent='결과 이미지 저장';
+}
+
+$('#saveCard').onclick=()=>{ let ink=0; for(let i=0;i<N*N;i++) if(data[i]>0) ink++;
+  saveResult({ title:'픽셀 실험실 · 1차시 활동 결과', subtitle:'딥러닝 이해와 데이터 준비 (교과서 96~98쪽)', digit: ink? data : null,
+    footer:'Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 1차시',
+    sections:[
+      {h:'활동 1  특징 고르기', lines:[ st.feat===null? '하지 않음' : `8개 특징 중 ${st.feat}개를 맞게 판단` ]},
+      {h:'활동 2  숫자 그리기', lines:[ ink? `색칠한 칸 ${ink}개 / 784개` : '그리지 않음' ]},
+      {h:'활동 3  몇 번째 칸일까?', lines:[ st.idx.tries? `${st.idx.correct}문제 정답 (시도 ${st.idx.tries}회)` : '하지 않음' ]},
+      {h:'활동 5  원-핫 거꾸로 맞히기', lines:[ st.oh.tries? `${st.oh.correct}문제 정답 (시도 ${st.oh.tries}회)` : '하지 않음' ]},
+      {h:'활동 6  확인 문제', lines: quizLines(Q, st.chosen)},
+      {h:'한 문장 쓰기: 데이터를 왜 이렇게 바꿨을까?', lines:[ $('#thought').value.trim() || '(쓰지 않음)' ]}
+    ]}, '1차시'); };
+
+/* ---------- refresh ---------- */
+function refresh(){ drawGrid(); drawStrip(); drawNormTable(); let n=0; for(let i=0;i<N*N;i++) if(data[i]>0) n++; $('#inkCount').textContent=n; }
+refreshRow(); refresh();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
+})();
+</script>
+</body>
+</html>
