@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>생성과 활용 · 컴퓨터 비전 2차시</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --panel:#FFFFFF; --ink:#17233B; --ink-soft:#4A5A78; --grid:#CFDAEA;
+  --hi:#FFD43B; --hi-ink:#3D2F00; --teal:#12807A; --teal-soft:#DDF1EF; --warn:#B8430B; --warn-soft:#FBE7DC;
+  --cell-empty:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+    --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416; --hi-ink:#2B2100; --cell-empty:#0B1220;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+  --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416; --hi-ink:#2B2100; --cell-empty:#0B1220;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px); height:100%; scroll-behavior:smooth}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; font-size:16px; line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px; background-attachment:fixed}
+h1,h2,h3{font-family:"Do Hyeon","IBM Plex Sans KR",sans-serif; font-weight:400; line-height:1.2; margin:0}
+h3{font-size:1.35rem; margin-top:22px}
+button,input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--teal); outline-offset:2px}
+a{color:var(--teal)}
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:10; background:var(--bg); border-bottom:2px solid var(--ink)}
+.topbar-inner{max-width:920px; margin:0 auto; padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.brand{font-family:"Do Hyeon",sans-serif; font-size:1.35rem; margin-right:auto}
+.steps{display:flex; gap:6px; flex-wrap:wrap}
+.steps a{display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 8px; border:2px solid var(--ink); border-radius:6px; text-decoration:none; color:var(--ink); background:var(--panel); font-family:"Do Hyeon",sans-serif; font-size:1.05rem}
+.steps a:hover{background:var(--hi); color:var(--hi-ink)}
+main{max-width:920px; margin:0 auto; padding:24px 16px 64px}
+.hero{padding:28px 0 8px}
+.hero h1{font-size:clamp(2.1rem,6vw,3.3rem)}
+.hero p{max-width:60ch; color:var(--ink-soft); margin:10px 0 0}
+.book{font-size:.85rem; color:var(--ink-soft)}
+section.act{background:var(--panel); border:2px solid var(--ink); border-radius:10px; margin:28px 0; padding:22px 20px 24px; box-shadow:6px 6px 0 var(--ink)}
+@media (max-width:520px){section.act{padding:18px 14px 20px; box-shadow:4px 4px 0 var(--ink)}}
+.act-head{display:flex; gap:14px; align-items:baseline; margin-bottom:6px}
+.num{font-family:"Do Hyeon",sans-serif; font-size:2.6rem; line-height:1; color:var(--teal); min-width:1.2em}
+.act-head h2{font-size:1.75rem}
+.lead{color:var(--ink-soft); margin:4px 0 16px; max-width:65ch}
+.note{font-size:.92rem; color:var(--ink-soft)}
+.btn{border:2px solid var(--ink); background:var(--panel); border-radius:6px; padding:7px 14px; cursor:pointer; font-weight:500}
+.btn:hover{background:var(--teal-soft)}
+.btn[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.btn.primary{background:var(--ink); color:var(--bg)}
+.btn.primary:hover{background:var(--teal); border-color:var(--teal); color:#fff}
+.btn:disabled{opacity:.5; cursor:default}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.feedback{margin-top:14px; padding:12px 14px; border-radius:8px; border-left:5px solid var(--teal); background:var(--teal-soft)}
+.feedback.bad{border-left-color:var(--warn); background:var(--warn-soft)}
+.hidden{display:none !important}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.92rem; background:var(--bg); border:1px solid var(--grid); border-radius:6px; padding:8px 10px; overflow-x:auto; white-space:pre-wrap; word-break:break-all}
+input[type=range]{accent-color:var(--teal); width:100%; max-width:360px}
+input[type=text],input[type=number],select,textarea{padding:7px 9px; border:2px solid var(--ink); border-radius:6px; background:var(--panel)}
+input[type=number]{width:84px}
+input.ok,select.ok{border-color:var(--teal); background:var(--teal-soft)}
+input.no,select.no{border-color:var(--warn); background:var(--warn-soft)}
+textarea{width:100%; min-height:70px; resize:vertical}
+.field{display:block; margin:12px 0}
+.field > span{display:block; font-weight:500; margin-bottom:4px}
+.field input[type=text]{width:100%}
+.tbl-wrap{overflow-x:auto}
+table.data{border-collapse:collapse; width:100%}
+table.data th,table.data td{border-bottom:1px solid var(--grid); padding:8px 10px; text-align:left; vertical-align:middle}
+table.data th{border-bottom:2px solid var(--ink)}
+.q{border-top:1px dashed var(--grid); padding:14px 0}
+.q:first-child{border-top:0}
+.q p{margin:0 0 8px; font-weight:500}
+.opts{display:grid; gap:6px}
+.opt{text-align:left; border:2px solid var(--ink); border-radius:6px; padding:8px 12px; background:var(--panel); cursor:pointer}
+.opt:hover{background:var(--teal-soft)}
+.opt.right{background:var(--teal-soft); border-color:var(--teal)}
+.opt.wrong{background:var(--warn-soft); border-color:var(--warn)}
+.opt:disabled{cursor:default}
+.explain{margin-top:8px; font-size:.95rem; color:var(--ink-soft)}
+.score{font-family:"Do Hyeon",sans-serif; font-size:1.5rem; margin-top:10px}
+.checks label{display:flex; gap:10px; align-items:flex-start; padding:6px 0; cursor:pointer}
+.checks input{width:20px; height:20px; margin-top:3px; accent-color:var(--teal)}
+.kws{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px}
+.kw{border:2px solid var(--ink); border-radius:999px; padding:2px 12px; font-size:.92rem; background:var(--panel)}
+.kw.used{background:var(--hi); color:var(--hi-ink)}
+.stu{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:12px}
+.stu label{display:block; font-weight:500; font-size:.92rem}
+.stu input{width:100%}
+.preview{margin-top:16px}
+.preview img{display:block; width:100%; max-width:560px; border:2px solid var(--ink); border-radius:6px; background:#fff}
+.preview p{font-size:.92rem; color:var(--ink-soft)}
+footer{max-width:920px; margin:0 auto; padding:0 16px 40px; color:var(--ink-soft); font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important; scroll-behavior:auto !important}}
+
+.gan{display:grid; grid-template-columns:minmax(0,1fr) 220px; gap:18px; align-items:start}
+@media (max-width:700px){.gan{grid-template-columns:1fr}}
+svg.dist{width:100%; height:auto; display:block; border:1px solid var(--grid); border-radius:6px; background:var(--bg)}
+.pics{display:flex; gap:12px}
+.pics figure{margin:0; text-align:center; font-size:.85rem; color:var(--ink-soft)}
+.pics canvas{width:96px; height:96px; border:2px solid var(--ink); border-radius:6px; display:block; image-rendering:pixelated; background:#fff}
+.meter{height:22px; background:var(--grid); border-radius:4px; overflow:hidden; margin:6px 0}
+.meter span{display:block; height:100%; background:var(--teal); transition:width .4s ease}
+.big{font-family:"Do Hyeon",sans-serif; font-size:1.6rem}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:.9rem; color:var(--ink-soft); margin-top:6px}
+.legend i{display:inline-block; width:22px; height:4px; border-radius:2px; vertical-align:middle; margin-right:5px}
+.pgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:4px 16px}
+.prompt-out{border:2px dashed var(--ink); border-radius:8px; padding:12px 14px; margin:10px 0; min-height:52px; background:var(--bg)}
+.saved{border-left:5px solid var(--teal); background:var(--teal-soft); padding:10px 14px; border-radius:6px; margin:8px 0}
+.saved b{display:block; font-size:.85rem; color:var(--ink-soft); font-weight:500}
+.why{border:2px solid var(--ink); border-radius:8px; margin-top:12px; background:var(--bg)}
+.why summary{cursor:pointer; padding:10px 14px; font-weight:700}
+.why[open] summary{border-bottom:1px solid var(--grid)}
+.why > :not(summary){margin:10px 16px}
+.why ol, .why ul{padding-left:1.3em}
+.why li{margin:6px 0}
+.warnbox{border-left:5px solid var(--warn); background:var(--warn-soft); padding:10px 14px; border-radius:6px; margin:10px 0; font-size:.95rem}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner"><div class="brand">생성과 활용</div><nav class="steps" aria-label="활동 바로가기"><a href="#a1" title="GAN">1</a><a href="#a2" title="프롬프트">2</a><a href="#a3" title="활용 사례">3</a><a href="#a4" title="토의">4</a><a href="#a5" title="개념 확인">5</a><a href="#a6" title="내용 정리">6</a><a href="#a7" title="결과 저장">7</a></nav></div></header>
+<main>
+
+  <div class="hero">
+    <h1>만들어 내는 인공지능, 보는 인공지능</h1>
+    <p>지난 시간에는 컴퓨터가 이미지를 보고 이해하는 방법을 배웠어요. 오늘은 인공지능이 새로운 이미지를 만들어 내는 방법과, 컴퓨터 비전이 우리 생활에서 쓰이는 모습을 살펴봐요.</p>
+    <p class="book">교과서 106~109쪽 · 생성형 인공지능과 컴퓨터 비전의 활용</p>
+  </div>
+
+  <section class="act" id="a1">
+    <div class="act-head"><span class="num">1</span><h2>위조지폐범과 경찰 (GAN)</h2></div>
+    <p class="lead">GAN은 가짜를 만드는 <b>생성자</b>와 진짜·가짜를 가려내는 <b>감별자</b>가 경쟁하며 학습해요. ‘한 라운드 학습’을 눌러 생성자가 점점 진짜와 비슷해지는 모습을 보세요.</p>
+    <div class="gan">
+      <div>
+        <svg class="dist" id="dist" viewBox="0 0 520 220" role="img" aria-label="진짜 데이터와 가짜 데이터의 분포"></svg>
+        <div class="legend"><span><i style="background:var(--teal)"></i>진짜 데이터</span><span><i style="background:var(--warn)"></i>생성자가 만든 가짜 데이터</span></div>
+      </div>
+      <div>
+        <div class="pics">
+          <figure><canvas id="realPic" width="7" height="7"></canvas>진짜 그림</figure>
+          <figure><canvas id="fakePic" width="7" height="7"></canvas>가짜 그림</figure>
+        </div>
+        <p style="margin:12px 0 0">라운드 <b class="big" id="ganRound">0</b></p>
+        <p style="margin:4px 0 0">감별자가 맞힌 비율 <b id="ganAccTxt"></b></p>
+        <div class="meter"><span id="ganAcc"></span></div>
+        <p class="note" style="margin:0">50%에 가까울수록 감별자가 찍는 것과 다르지 않아요.</p>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="ganStep">한 라운드 학습</button><button class="btn" id="ganReset">처음부터</button></div>
+    <div class="feedback hidden" id="ganFb"></div>
+    <details class="why">
+      <summary>한 라운드 동안 무슨 일이 일어날까?</summary>
+      <ol>
+        <li><b>생성자가 가짜를 만든다.</b> 진짜 데이터와 섞어서 감별자에게 보여 줘요.</li>
+        <li><b>감별자가 하나씩 진짜인지 가짜인지 판정한다.</b></li>
+        <li><b>정답을 맞춰 본다.</b> 어느 것이 진짜고 어느 것이 가짜였는지는 이미 알고 있어서, 판정이 맞았는지 바로 확인할 수 있어요.</li>
+        <li><b>둘이 각자 학습한다.</b> 감별자는 판정이 틀린 데이터를 보고 다음엔 더 잘 구분하도록 기준을 고쳐요. 생성자는 가짜라고 들킨 것들을 보고, 어떻게 바꾸면 감별자가 진짜라고 믿었을지 배워서 다음 가짜를 그쪽으로 고쳐요.</li>
+      </ol>
+      <p>위조지폐로 비유하면, 경찰은 “놓친 가짜를 보니 워터마크를 확인해야겠군” 하고 검사 기준을 높이고, 위조범은 “워터마크에서 들켰군” 하고 다음엔 워터마크까지 흉내 내는 거예요.</p>
+    </details>
+    <details class="why">
+      <summary>왜 감별자가 맞힌 비율이 점점 줄어들까?</summary>
+      <p>감별자의 실력이 떨어져서가 아니라, <b>구분해야 할 문제가 점점 어려워지기 때문</b>이에요.</p>
+      <ul>
+        <li><b>처음:</b> 가짜(주황)는 2 근처, 진짜(청록)는 7 근처에 있어 두 곡선이 거의 겹치지 않아요. “값이 5보다 작으면 가짜”라는 단순한 기준으로도 거의 다 맞힐 수 있어요.</li>
+        <li><b>라운드가 진행되면:</b> 생성자가 가짜를 진짜 쪽으로 옮기면서 두 곡선이 겹치는 부분이 넓어져요. 겹친 구간의 데이터는 진짜인지 가짜인지 판단할 근거가 없어서 틀리는 비율이 늘어나요.</li>
+        <li><b>두 곡선이 거의 포개지면:</b> 어떤 값을 받아도 진짜일 가능성과 가짜일 가능성이 반반이에요. 감별자가 할 수 있는 최선이 동전 던지기와 같아져서 맞힌 비율이 50%가 돼요. 이때 학습이 끝나요.</li>
+      </ul>
+      <p>위조범이 진짜와 똑같은 지폐를 만들게 되면, 경찰은 여전히 유능하지만 구분할 방법이 없어 반은 맞히고 반은 틀리게 되는 것과 같아요.</p>
+      <p class="note">이 웹앱은 원리를 보여 주려고 단순하게 만든 시뮬레이션이에요. 매 라운드 감별자가 낼 수 있는 가장 좋은 정답률을 계산해 보여 줘요. 실제 GAN에서는 감별자도 함께 학습하며 실력이 오르내리기 때문에 정답률이 출렁이면서 내려가요.</p>
+    </details>
+
+    <h3>정리해 보기</h3>
+    <div class="tbl-wrap"><table class="data" id="roleQ"></table></div>
+    <p style="margin:16px 0 6px; font-weight:500">학습 순서대로 번호를 골라 보세요.</p>
+    <div class="tbl-wrap"><table class="data" id="seqQ"></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="ganCheck">확인하기</button></div>
+    <div class="feedback hidden" id="ganQFb"></div>
+    <label class="field"><span>생각해 보기: 학습이 끝난 뒤 우리가 쓰는 것은 생성자와 감별자 중 무엇일까요? 그 이유는?</span><textarea id="a1think" maxlength="300"></textarea></label>
+  </section>
+
+  <section class="act" id="a2">
+    <div class="act-head"><span class="num">2</span><h2>프롬프트로 여행지 사진 만들기</h2></div>
+    <p class="lead">가장 가 보고 싶은 여행지에서 사진을 찍었다고 상상하고, 그 사진을 글로 표현해 봐요. 원하는 결과가 나오도록 생성형 인공지능에 주는 명령 문구를 <b>프롬프트</b>라고 해요.</p>
+    <div class="warnbox">실존 인물(연예인, 친구)의 이름이나 얼굴 사진은 넣지 않아요. 사진 속 인물은 상상의 인물로 표현해요.</div>
+    <div class="pgrid">
+      <label class="field"><span>여행지와 배경</span><input type="text" id="p_place" maxlength="80" placeholder="예: 파리 카페 창가, 창밖으로 에펠탑"></label>
+      <label class="field"><span>인물 (수, 머리 모양, 옷, 자세)</span><input type="text" id="p_people" maxlength="100" placeholder="예: 하늘색 티셔츠를 입은 학생 한 명이 앉아 있음"></label>
+      <label class="field"><span>주변의 물건이나 건물</span><input type="text" id="p_things" maxlength="80" placeholder="예: 테이블 위 커피 잔과 크루아상"></label>
+      <label class="field"><span>하늘, 날씨, 시간대</span><input type="text" id="p_sky" maxlength="80" placeholder="예: 파란 하늘에 흰 구름, 오후"></label>
+      <label class="field"><span>그림 느낌</span><select id="p_style"><option value="">고르기</option><option>실제 사진</option><option>수채화</option><option>만화</option><option>유화</option><option>3D 애니메이션</option><option>연필 스케치</option></select></label>
+    </div>
+    <p style="margin:6px 0 0; font-weight:500">완성된 프롬프트</p>
+    <div class="prompt-out" id="pOut"></div>
+    <p style="margin:0">구체적인 정도 <b id="pScoreTxt"></b></p>
+    <div class="meter"><span id="pScore"></span></div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="pCopy">프롬프트 복사</button><button class="btn primary" id="pSave1">첫 번째 프롬프트로 저장</button><button class="btn primary" id="pSave2" disabled>두 번째 프롬프트로 저장</button></div>
+    <p class="note" id="pCopyMsg"></p>
+    <div id="p1Box" class="saved hidden"><b>첫 번째 프롬프트</b><span id="p1Txt"></span></div>
+    <div id="pMid" class="hidden">
+      <p class="note">선생님이 안내한 이미지 생성 도구에 첫 번째 프롬프트를 넣어 보고, 결과를 보며 아래를 채운 뒤 위 칸을 고쳐 두 번째 프롬프트를 저장하세요.</p>
+      <label class="field"><span>마음에 든 부분</span><input type="text" id="pGood" maxlength="120"></label>
+      <label class="field"><span>원하는 대로 나오지 않은 부분</span><input type="text" id="pBad" maxlength="120"></label>
+    </div>
+    <div id="p2Box" class="saved hidden"><b>두 번째 프롬프트</b><span id="p2Txt"></span></div>
+    <label class="field"><span>발견한 점: 프롬프트를 어떻게 바꾸었더니 결과가 나아졌나요?</span><textarea id="pFound" maxlength="300"></textarea></label>
+  </section>
+
+  <section class="act" id="a3">
+    <div class="act-head"><span class="num">3</span><h2>컴퓨터 비전 활용 사례</h2></div>
+    <p class="lead">아래 기술 중 하나를 골라 직접 체험하고 정리해 봐요. 내 얼굴이나 친구 얼굴 사진은 올리지 말고, 사이트의 예시 사진을 써요.</p>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>기술</th><th>체험</th></tr>
+      <tr><td>광학 문자 인식(OCR)</td><td>선생님 시연</td></tr>
+      <tr><td>객체 탐지</td><td><a href="https://huggingface.co/spaces/ClassCat/DETR-Object-Detection" target="_blank" rel="noopener">DETR 객체 탐지</a></td></tr>
+      <tr><td>얼굴 인식 (얼굴 찾아 가리기)</td><td><a href="https://epretx.etri.re.kr/api/demo/fd" target="_blank" rel="noopener">ETRI 얼굴 비식별화</a></td></tr>
+      <tr><td>얼굴 영상 생성 (얼굴 보정)</td><td><a href="https://www.perfectcorp.com/ko/business/showcase/face-reshaping" target="_blank" rel="noopener">교과서 109쪽 사이트</a></td></tr>
+    </table></div>
+    <div class="pgrid" style="margin-top:8px">
+      <label class="field"><span>내가 체험한 기술</span><select id="teamTech"><option value="">고르기</option><option>광학 문자 인식(OCR)</option><option>객체 탐지</option><option>얼굴 인식</option><option>얼굴 영상 생성</option></select></label>
+      <label class="field"><span>체험하며 해 본 것</span><input type="text" id="teamDid" maxlength="120"></label>
+    </div>
+    <label class="field"><span>이 기술의 특징 한 줄</span><input type="text" id="teamFeat" maxlength="120"></label>
+    <h3>어떤 기술일까?</h3>
+    <p class="note">각 사례에 쓰인 기술을 골라 보세요.</p>
+    <div class="tbl-wrap"><table class="data" id="useQ"></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="useCheck">확인하기</button></div>
+    <div class="feedback hidden" id="useFb"></div>
+  </section>
+
+  <section class="act" id="a4">
+    <div class="act-head"><span class="num">4</span><h2>어떻게 쓰면 좋을까? (짝 토의)</h2></div>
+    <label class="field"><span>생성형 인공지능을 활용하면 학교나 우리 동네의 어떤 문제를 해결할 수 있을까요?</span><textarea id="d_idea" maxlength="300"></textarea></label>
+    <p style="margin:14px 0 6px; font-weight:500">같은 기술이 누군가에게 피해를 줄 수도 있어요. 무엇이 문제이고, 어떻게 막을 수 있을까요?</p>
+    <div id="dRows"></div>
+  </section>
+
+  <section class="act" id="a5">
+    <div class="act-head"><span class="num">5</span><h2>주요 개념 확인</h2></div>
+    <p class="lead">고르면 바로 정답과 해설이 나와요.</p>
+    <div id="quiz"></div>
+    <div class="score" id="score"></div>
+    <button class="btn" id="quizReset" style="margin-top:8px">다시 풀기</button>
+    <h3>성취도 자기 점검</h3>
+    <div class="checks" id="selfChk"></div>
+  </section>
+
+  <section class="act" id="a6">
+    <div class="act-head"><span class="num">6</span><h2>오늘 배운 내용 정리</h2></div>
+    <p class="lead">오늘 활동을 떠올리며 배운 내용을 내 말로 정리해요. 아래 핵심 낱말을 문장에 쓰면 노랗게 표시돼요. 정리한 내용은 제출 이미지 맨 위에 들어가요.</p>
+    <p style="margin:0 0 6px; font-weight:500">핵심 낱말</p>
+    <div class="kws" id="kws"><span class="kw" data-w="생성형 인공지능">생성형 인공지능</span><span class="kw" data-w="GAN">GAN</span><span class="kw" data-w="생성자">생성자</span><span class="kw" data-w="감별자">감별자</span><span class="kw" data-w="프롬프트">프롬프트</span><span class="kw" data-w="광학 문자 인식">광학 문자 인식</span><span class="kw" data-w="객체 탐지">객체 탐지</span><span class="kw" data-w="얼굴 인식">얼굴 인식</span><span class="kw" data-w="딥페이크">딥페이크</span><span class="kw" data-w="초상권">초상권</span></div>
+    <label class="field"><span>① 오늘 배운 내용을 세 문장 정도로 정리해 보세요. 핵심 낱말을 2개 이상 넣어 보세요.</span><textarea id="sumMain" maxlength="500" style="min-height:110px"></textarea></label>
+    <p class="note" id="sumUsed" style="margin:-4px 0 0">사용한 핵심 낱말: 0개</p>
+    <label class="field"><span>② 가장 기억에 남는 활동과 그 이유</span><textarea id="sumBest" maxlength="300"></textarea></label>
+    <label class="field"><span>③ 더 알고 싶거나 궁금한 점</span><textarea id="sumQ" maxlength="300"></textarea></label>
+  </section>
+  <section class="act" id="a7">
+    <div class="act-head"><span class="num">7</span><h2>결과 저장하고 제출하기</h2></div>
+    <p class="lead">학번과 이름을 쓰고 저장하면 오늘 활동 결과가 이미지 한 장으로 만들어져요. 그 이미지를 구글 클래스룸 과제에 첨부해 제출하세요.</p>
+    <div class="stu">
+      <div><label for="sid">학번</label><input type="text" id="sid" inputmode="numeric" autocomplete="off" placeholder="예: 10315"></div>
+      <div><label for="sname">이름</label><input type="text" id="sname" autocomplete="off" placeholder="예: 홍길동"></div>
+    </div>
+    <div class="row"><button class="btn primary" id="saveCard">결과 이미지 저장</button></div>
+    <div class="feedback bad hidden" id="saveErr"></div>
+    <div class="preview hidden" id="preview">
+      <img id="cardImg" alt="활동 결과 이미지">
+      <p>파일이 자동으로 내려받아지지 않으면 <a id="cardLink" download>여기를 눌러 저장</a>하거나, 이미지를 길게 누르거나(휴대폰) 오른쪽 클릭해(컴퓨터) 저장하세요.</p>
+    </div>
+  </section>
+</main>
+<footer>Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 컴퓨터 비전 2차시 활동용 웹앱</footer>
+<script>
+(function(){
+
+const $=(s)=>document.querySelector(s);
+const $$=(s)=>[...document.querySelectorAll(s)];
+const css=(v)=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const esc=(t)=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const val=(id)=>{const e=document.getElementById(id); return e? e.value.trim():'';};
+function mark(el, ok){ el.classList.remove('ok','no'); el.classList.add(ok?'ok':'no'); }
+function fb(id, ok, html){ const e=document.getElementById(id); e.classList.remove('hidden'); e.classList.toggle('bad',!ok); e.innerHTML=html; }
+function makeQuiz(el, Q, scoreEl){
+  el._chosen=[]; let answered=0, correct=0; if(scoreEl) scoreEl.textContent='';
+  el.innerHTML=Q.map((x,qi)=>`<div class="q"><p>${Q.length>1?(qi+1)+'. ':''}${x.q}</p><div class="opts">${x.o.map((o,oi)=>`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}</div><div class="explain hidden"></div></div>`).join('');
+  el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const qi=+b.dataset.q, oi=+b.dataset.o; const box=b.closest('.q'); const btns=box.querySelectorAll('.opt');
+    el._chosen[qi]=oi; btns.forEach(x=>x.disabled=true); btns[Q[qi].a].classList.add('right'); if(oi!==Q[qi].a) b.classList.add('wrong'); else correct++;
+    answered++; const ex=box.querySelector('.explain'); ex.classList.remove('hidden'); ex.textContent=(oi===Q[qi].a?'정답이에요. ':'정답은 '+(Q[qi].a+1)+'번 보기예요. ')+Q[qi].e;
+    if(scoreEl && answered===Q.length) scoreEl.textContent=`${Q.length}문제 중 ${correct}문제 맞혔어요`;
+  });
+}
+function quizLines(Q,chosen){ chosen=chosen||[]; const n=chosen.filter(v=>v!==undefined).length; const ok=Q.filter((q,i)=>chosen[i]===q.a).length;
+  const out=[`점수: ${ok} / ${Q.length}  (푼 문제 ${n}개)`];
+  Q.forEach((q,i)=>{ const c=chosen[i]; out.push(c===undefined? `${i+1}. 풀지 않음` : (c===q.a? `${i+1}. ○ ${q.o[c]}` : `${i+1}. × 내 답: ${q.o[c]}`)); }); return out; }
+function wrap(x,text,maxW){const out=[];String(text).split('\n').forEach(par=>{let line='';par.split(/(\s+)/).forEach(tok=>{ if(!tok) return; const t=line+tok; if(x.measureText(t).width<=maxW){line=t;return;} if(line.trim()){out.push(line.trimEnd()); line='';} tok=tok.replace(/^\s+/,''); for(const ch of tok){ const t2=line+ch; if(x.measureText(t2).width>maxW && line){out.push(line); line=ch;} else line=t2; } }); out.push(line.trimEnd());}); return out;}
+async function renderCard(o){
+  try{ await Promise.all([document.fonts.load('28px "Do Hyeon"'), document.fonts.load('18px "IBM Plex Sans KR"'), document.fonts.load('bold 18px "IBM Plex Sans KR"')]); }catch(e){}
+  const W=900, P=44, LH=29, BODY='18px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', HEAD='26px "Do Hyeon","IBM Plex Sans KR",sans-serif';
+  const meas=document.createElement('canvas').getContext('2d'); meas.font=BODY;
+  const headH = o.image ? 250 : 210; let h=headH+10; const blocks=[];
+  o.sections.forEach(sec=>{ const lines=[]; sec.lines.forEach(l=>wrap(meas,l,W-2*P-24).forEach(w=>lines.push(w))); blocks.push({h:sec.h, lines}); h+=44+lines.length*LH+22; });
+  h+=50;
+  const c=document.createElement('canvas'); const dpr=2; c.width=W*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,h);
+  x.fillStyle='#17233B'; x.fillRect(0,0,W,10);
+  const maxT = W-2*P-(o.image?188:0); let fsz=34; x.font=fsz+'px "Do Hyeon",sans-serif'; while(x.measureText(o.title).width>maxT && fsz>20){ fsz-=1; x.font=fsz+'px "Do Hyeon",sans-serif'; } x.fillText(o.title,P,62);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText(o.subtitle,P,94);
+  x.fillStyle='#17233B'; x.font='bold 22px "IBM Plex Sans KR",sans-serif'; x.fillText(`${o.sid}  ${o.name}`,P,138);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText('저장 시각: '+new Date().toLocaleString('ko-KR'),P,168);
+  if(o.image){ const n=o.image.n, box=168, cs=box/n, dx=W-P-box, dy=34;
+    for(let r=0;r<n;r++) for(let cc=0;cc<n;cc++){ const v=o.image.data[r*n+cc]; const g=Math.round(255-v*232); x.fillStyle=`rgb(${g},${g},${Math.min(255,g+12)})`; x.fillRect(dx+cc*cs,dy+r*cs,cs+.5,cs+.5); }
+    x.strokeStyle='#17233B'; x.lineWidth=2; x.strokeRect(dx,dy,box,box);
+    x.font='15px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.textAlign='center'; x.fillText(o.image.label,dx+box/2,dy+box+22); x.textAlign='left'; }
+  let y=headH; x.strokeStyle='#CFDAEA'; x.lineWidth=2; x.beginPath(); x.moveTo(P,y-14); x.lineTo(W-P,y-14); x.stroke();
+  blocks.forEach(b=>{ x.fillStyle='#FFD43B'; x.fillRect(P,y+6,6,26); x.fillStyle='#17233B'; x.font=HEAD; x.fillText(b.h,P+16,y+30); y+=44;
+    x.font=BODY; b.lines.forEach(l=>{ x.fillStyle = /^\s*\d+\.\s*×/.test(l)? '#B8430B' : '#17233B'; x.fillText(l,P+16,y+20); y+=LH; }); y+=22; });
+  x.font='14px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.fillText(o.footer,P,h-24);
+  return c.toDataURL('image/png');
+}
+async function saveResult(o, prefix){
+  const sid=$('#sid').value.trim(), name=$('#sname').value.trim(), err=$('#saveErr');
+  if(!sid||!name){ err.classList.remove('hidden'); err.textContent='학번과 이름을 모두 써 주세요.'; return; }
+  err.classList.add('hidden'); const btn=$('#saveCard'); btn.disabled=true; btn.textContent='만드는 중…';
+  try{
+    const url=await renderCard(Object.assign({sid,name},o));
+    const file=`${prefix}_${sid}_${name}.png`.replace(/[\\/:*?"<>|\s]+/g,'_');
+    $('#cardImg').src=url; const a=$('#cardLink'); a.href=url; a.download=file; $('#preview').classList.remove('hidden');
+    try{ a.click(); }catch(e){}
+  }catch(e){ err.classList.remove('hidden'); err.textContent='이미지를 만들지 못했어요. 다시 눌러 보세요.'; }
+  btn.disabled=false; btn.textContent='결과 이미지 저장';
+}
+const orBlank=(t)=>t||'(쓰지 않음)';
+function initSummary(){ const ta=$('#sumMain'); if(!ta) return; const upd=()=>{ const t=ta.value; const used=$$('#kws .kw').filter(k=>{ const hit=t.includes(k.dataset.w); k.classList.toggle('used',hit); return hit; }).map(k=>k.dataset.w); $('#sumUsed').textContent=`사용한 핵심 낱말: ${used.length}개${used.length?' ('+used.join(', ')+')':''}`; ta._used=used; }; ta.addEventListener('input',upd); upd(); }
+function summarySection(){ const used=($('#sumMain')._used)||[]; return {h:'오늘 배운 내용 정리', lines:[ orBlank(val('sumMain')), `사용한 핵심 낱말: ${used.length? used.join(', ') : '없음'}`, `기억에 남는 활동: ${orBlank(val('sumBest'))}`, `궁금한 점: ${orBlank(val('sumQ'))}` ]}; }
+function summaryReady(){ if(val('sumMain')) return true; const err=$('#saveErr'); err.classList.remove('hidden'); err.innerHTML='‘오늘 배운 내용 정리’의 ①을 먼저 써 주세요. <a href="#sumMain">정리하러 가기</a>'; return false; }
+
+
+const st={round:0, acc:null, ended:false, ganQ:null, p1:'', p2:'', use:null};
+
+/* ---------- 1. GAN ---------- */
+const RM=7, RS=0.9; let gm, gs;
+const pdf=(x,m,s)=>Math.exp(-0.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));
+function tv(){ let t=0; for(let x=0;x<=10;x+=0.02) t+=Math.abs(pdf(x,RM,RS)-pdf(x,gm,gs))*0.02; return Math.min(1,t/2); }
+const SMILE=[0,0,1,1,1,0,0, 0,1,0,0,0,1,0, 1,0,1,0,1,0,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 0,1,0,0,0,1,0, 0,0,1,1,1,0,0];
+function drawPic(id, q){ const c=document.getElementById(id), x=c.getContext('2d'); const img=x.createImageData(7,7);
+  SMILE.forEach((v,i)=>{ const noise=Math.random(); const p = v*q + noise*(1-q); const g=Math.round(255-p*230); img.data[i*4]=g; img.data[i*4+1]=g; img.data[i*4+2]=Math.min(255,g+12); img.data[i*4+3]=255; }); x.putImageData(img,0,0); }
+function drawGan(){
+  const L=30,R=505,T=14,B=185, sx=v=>L+v/10*(R-L); const ymax=pdf(RM,RM,RS)*1.08; const sy=v=>B-v/ymax*(B-T);
+  const path=(m,s)=>{ let d=''; for(let x=0;x<=10.001;x+=0.1) d+=(d?'L':'M')+sx(x).toFixed(1)+','+sy(pdf(x,m,s)).toFixed(1); return d; };
+  let s=`<line x1="${L}" y1="${B}" x2="${R}" y2="${B}" stroke="${css('--ink-soft')}"/>`;
+  for(let i=0;i<=10;i+=2) s+=`<text x="${sx(i)}" y="${B+18}" text-anchor="middle" font-size="12" fill="${css('--ink-soft')}">${i}</text>`;
+  s+=`<text x="${(L+R)/2}" y="${B+34}" text-anchor="middle" font-size="12" fill="${css('--ink-soft')}">데이터의 특징 값</text>`;
+  s+=`<path d="${path(RM,RS)}L${sx(10)},${B}L${sx(0)},${B}Z" fill="${css('--teal')}" fill-opacity=".18" stroke="${css('--teal')}" stroke-width="2.5"/>`;
+  s+=`<path d="${path(gm,gs)}L${sx(10)},${B}L${sx(0)},${B}Z" fill="${css('--warn')}" fill-opacity=".15" stroke="${css('--warn')}" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+  $('#dist').innerHTML=s;
+  const t=tv(); const acc=0.5+0.5*t; st.acc=acc;
+  $('#ganAcc').style.width=(acc*100)+'%'; $('#ganAccTxt').textContent=Math.round(acc*100)+'%'; $('#ganRound').textContent=st.round;
+  drawPic('realPic',1); drawPic('fakePic', Math.max(0,1-t*1.05));
+}
+function ganReset(){ gm=2; gs=1.8; st.round=0; st.ended=false; $('#ganStep').disabled=false; $('#ganFb').classList.add('hidden'); drawGan(); }
+$('#ganStep').onclick=()=>{ st.round++; gm+=(RM-gm)*0.38; gs+=(RS-gs)*0.38; drawGan();
+  if(st.acc<0.53){ st.ended=true; $('#ganStep').disabled=true; fb('ganFb',true,`${st.round}라운드 만에 감별자가 진짜와 가짜를 거의 구분하지 못하게 됐어요(${Math.round(st.acc*100)}%). 여기서 학습이 끝나고, 이렇게 학습된 생성자로 새로운 데이터를 만들어요.`); }
+  else fb('ganFb',true,`감별자는 판정이 틀린 데이터를 보고 더 잘 구분하도록 배웠어요. 생성자는 들킨 가짜를 보고 진짜처럼 보이도록 고쳤어요. 그래서 가짜가 진짜에 한 걸음 가까워졌어요.`); };
+$('#ganReset').onclick=ganReset; ganReset();
+
+const ROLES=[['위조지폐범','생성자','진짜 같은 가짜 데이터를 만든다'],['경찰','감별자','진짜와 가짜를 구분한다']];
+$('#roleQ').innerHTML='<tr><th>비유</th><th>GAN에서의 이름</th><th>하는 일</th></tr>'+ROLES.map((r,i)=>`<tr><td>${r[0]}</td><td><select id="rn${i}"><option value="">고르기</option><option>생성자</option><option>감별자</option></select></td><td><select id="rd${i}"><option value="">고르기</option><option>진짜 같은 가짜 데이터를 만든다</option><option>진짜와 가짜를 구분한다</option></select></td></tr>`).join('');
+const SEQ=[['감별자가 진짜 데이터와 가짜 데이터 중 진짜를 골라낸다.',2],['감별자가 더 이상 진짜와 가짜를 구분하지 못하면 학습이 끝난다.',4],['생성자가 가짜 데이터를 만든다.',1],['생성자와 감별자가 각각 결과를 보고 학습해 실력을 키운다.',3]];
+$('#seqQ').innerHTML='<tr><th>순서</th><th>내용</th></tr>'+SEQ.map((q,i)=>`<tr><td><select id="sq${i}" aria-label="순서"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option></select></td><td>${q[0]}</td></tr>`).join('');
+$('#ganCheck').onclick=()=>{ let r=0,s=0;
+  ROLES.forEach((x,i)=>{ const a=$('#rn'+i), b=$('#rd'+i); const ga=a.value===x[1], gb=b.value===x[2]; mark(a,ga); mark(b,gb); r+=ga+gb; });
+  SEQ.forEach((q,i)=>{ const e=$('#sq'+i); const g=e.value!==''&&+e.value===q[1]; mark(e,g); s+=g; });
+  st.ganQ={r,s}; fb('ganQFb',r+s===8, r+s===8? '모두 맞혔어요! 생성 → 감별 → 각자 학습을 반복하다가, 감별자가 구분하지 못하면 끝나요.' : `역할 ${r}/4, 순서 ${s}/4를 맞혔어요. 위 시뮬레이션을 다시 돌려 보세요.`); };
+
+/* ---------- 2. 프롬프트 ---------- */
+const PF=['p_place','p_people','p_things','p_sky','p_style'];
+function compose(){ const p=val('p_place'), pe=val('p_people'), t=val('p_things'), sk=val('p_sky'), sy=val('p_style');
+  const parts=[]; if(p) parts.push(p+'에서 찍은 사진'); if(pe) parts.push(pe); if(t) parts.push(t); if(sk) parts.push(sk); if(sy) parts.push(sy+' 느낌으로 그려 줘');
+  return parts.join('. ')+(parts.length?'.':''); }
+function scoreOf(){ const filled=PF.filter(id=>val(id)).length; const len=PF.reduce((a,id)=>a+val(id).length,0); return Math.min(100, filled*16 + Math.min(20, Math.floor(len/6))); }
+function updPrompt(){ const t=compose(); $('#pOut').textContent=t||'위 칸을 채우면 여기에 프롬프트가 만들어져요.'; const sc=scoreOf(); $('#pScore').style.width=sc+'%';
+  $('#pScoreTxt').textContent= sc>=85?'아주 구체적이에요': sc>=55?'좋아요, 조금 더 자세히 써 볼까요?':'더 자세히 써 보세요'; }
+PF.forEach(id=>{ const e=document.getElementById(id); e.addEventListener('input',updPrompt); e.addEventListener('change',updPrompt); }); updPrompt();
+$('#pCopy').onclick=async()=>{ const t=compose(); if(!t) return; let ok=false; try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){}
+  $('#pCopyMsg').textContent= ok? '복사했어요. 이미지 생성 도구에 붙여 넣으세요.' : '자동 복사가 안 돼요. 위 프롬프트를 길게 눌러 직접 복사하세요.'; };
+$('#pSave1').onclick=()=>{ const t=compose(); if(!t) return; st.p1=t; $('#p1Txt').textContent=t; $('#p1Box').classList.remove('hidden'); $('#pMid').classList.remove('hidden'); $('#pSave2').disabled=false; };
+$('#pSave2').onclick=()=>{ const t=compose(); if(!t) return; st.p2=t; $('#p2Txt').textContent=t; $('#p2Box').classList.remove('hidden'); };
+
+/* ---------- 3. 활용 ---------- */
+const TECH=['광학 문자 인식(OCR)','객체 탐지','얼굴 인식','얼굴 영상 생성'];
+const UQ=[['주차장에서 자동차 번호판을 읽어 주차비를 정산한다.',0],['식당 메뉴판의 글자를 읽어 음성으로 들려준다.',0],['도로 CCTV 영상으로 교통량을 분석한다.',1],['공항 X-ray 영상에서 소지 금지 물품을 찾는다.',1],['거리 뷰에서 지나가는 사람의 얼굴을 모자이크한다.',2],['스마트폰 잠금을 내 얼굴로 해제한다.',2],['영화에서 배우를 젊은 시절 모습으로 바꾼다.',3]];
+$('#useQ').innerHTML='<tr><th>사례</th><th>기술</th></tr>'+UQ.map((q,i)=>`<tr><td>${q[0]}</td><td><select id="uq${i}"><option value="">고르기</option>${TECH.map((t,j)=>`<option value="${j}">${t}</option>`).join('')}</select></td></tr>`).join('');
+$('#useCheck').onclick=()=>{ let ok=0; UQ.forEach((q,i)=>{ const s=$('#uq'+i); const g=s.value!==''&&+s.value===q[1]; mark(s,g); ok+=g; });
+  st.use=ok; fb('useFb',ok===UQ.length, ok===UQ.length? '모두 맞혔어요! 컴퓨터 비전은 사람의 눈을 대신해 생활 곳곳에서 쓰이고 있어요.' : `${UQ.length}개 중 ${ok}개를 맞혔어요.`); };
+
+/* ---------- 4. 토의 ---------- */
+const DS=['다른 사람 얼굴을 합성한 가짜 영상이 SNS에 퍼진다.','어떤 작가의 그림 화풍을 흉내 낸 그림을 내 작품이라고 대회에 낸다.','길거리 CCTV가 지나가는 사람의 얼굴을 모두 인식해 기록한다.'];
+$('#dRows').innerHTML=DS.map((d,i)=>`<div class="saved" style="background:var(--bg); border-left-color:var(--ink)"><b>상황 ${i+1}</b>${d}<label class="field"><span>무엇이 문제일까?</span><input type="text" id="dp${i}" maxlength="120"></label><label class="field"><span>어떻게 막을 수 있을까?</span><input type="text" id="ds${i}" maxlength="120"></label></div>`).join('');
+
+/* ---------- 5. 개념 ---------- */
+const Q=[
+  {q:'생성형 인공지능에 대한 설명으로 알맞은 것은?', o:['이미지 속 물체의 위치만 찾는다','학습한 내용을 바탕으로 기존 콘텐츠와 유사한 콘텐츠를 새롭게 만든다','사람이 정한 규칙대로만 동작한다','텍스트는 만들 수 없다'], a:1, e:'텍스트, 오디오, 이미지 등 기존 콘텐츠를 활용해 유사한 콘텐츠를 새롭게 만들어 내는 기술이에요.'},
+  {q:'GAN에서 진짜 데이터와 가짜 데이터를 구분하는 쪽은?', o:['생성자','감별자','필터','풀링층'], a:1, e:'감별자가 진짜·가짜를 가려내고, 생성자는 감별자를 속일 만큼 그럴듯한 가짜를 만들도록 학습해요.'},
+  {q:'GAN의 학습이 끝나는 때는?', o:['생성자가 가짜를 하나 만들었을 때','감별자가 가짜를 모두 맞혔을 때','감별자가 더 이상 진짜와 가짜를 구분하지 못할 때','데이터가 0이 될 때'], a:2, e:'감별자가 구분하지 못할 만큼 가짜가 진짜와 비슷해지면 학습을 끝내요.'},
+  {q:'원하는 결과가 나오도록 생성형 인공지능에 주는 명령 문구는?', o:['프롬프트','레이블','픽셀','에포크'], a:0, e:'구체적으로 쓸수록 원하는 결과에 가까워져요.'},
+  {q:'자동차 번호판을 읽어 주차비를 정산하는 데 쓰이는 기술은?', o:['얼굴 영상 생성','이미지 분할','광학 문자 인식(OCR)','GAN'], a:2, e:'OCR은 이미지 속 글자를 추출해 텍스트 데이터로 바꾸는 기술이에요.'}
+];
+const build=()=>makeQuiz($('#quiz'),Q,$('#score')); $('#quizReset').onclick=build; build();
+const SELF=['GAN의 생성자와 감별자가 학습하는 과정을 설명할 수 있다.','프롬프트를 고쳐 원하는 이미지에 가까워지게 할 수 있다.','컴퓨터 비전 기술의 활용 분야를 3가지 이상 말할 수 있다.','생성형 인공지능을 쓸 때 지켜야 할 점을 말할 수 있다.'];
+$('#selfChk').innerHTML=SELF.map((t,i)=>`<label><input type="checkbox" id="sc${i}"><span>${t}</span></label>`).join('');
+
+/* ---------- 6. 정리 ---------- */
+initSummary();
+/* ---------- 7. 저장 ---------- */
+$('#saveCard').onclick=()=>{
+  if(!summaryReady()) return;
+  const g=st.ganQ;
+  saveResult({ title:'생성과 활용 · 컴퓨터 비전 2차시 활동 결과', subtitle:'생성형 인공지능과 컴퓨터 비전의 활용 (교과서 106~109쪽)', image:null,
+    footer:'Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 컴퓨터 비전 2차시',
+    sections:[
+      summarySection(),
+      {h:'활동 1  GAN', lines:[ st.round? `시뮬레이션 ${st.round}라운드, 감별자 정답률 ${Math.round(st.acc*100)}%${st.ended?' (학습 종료)':''}` : '시뮬레이션 하지 않음', g? `역할 ${g.r}/4, 학습 순서 ${g.s}/4` : '정리 문제 확인하지 않음', `학습 후 쓰는 것: ${orBlank(val('a1think'))}` ]},
+      {h:'활동 2  프롬프트', lines:[ `첫 번째: ${orBlank(st.p1)}`, `마음에 든 부분: ${orBlank(val('pGood'))}`, `아쉬운 부분: ${orBlank(val('pBad'))}`, `두 번째: ${orBlank(st.p2)}`, `발견한 점: ${orBlank(val('pFound'))}` ]},
+      {h:'활동 3  컴퓨터 비전 활용', lines:[ `내가 체험한 기술: ${orBlank(val('teamTech'))}`, `해 본 것: ${orBlank(val('teamDid'))}`, `특징: ${orBlank(val('teamFeat'))}`, `사례 맞히기: ${st.use===null?'확인하지 않음':st.use+' / '+UQ.length}` ]},
+      {h:'활동 4  토의', lines:[ `해결할 수 있는 문제: ${orBlank(val('d_idea'))}`, ...DS.map((d,i)=>`상황 ${i+1}  문제: ${orBlank(val('dp'+i))} / 대책: ${orBlank(val('ds'+i))}`) ]},
+      {h:'활동 5  주요 개념', lines: quizLines(Q, $('#quiz')._chosen)},
+      {h:'성취도 자기 점검', lines: SELF.map((t,i)=>($('#sc'+i).checked?'☑ ':'☐ ')+t) }
+    ]}, '컴퓨터비전2차시'); };
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ drawGan(); });
+
+})();
+</script>
+</body>
+</html>

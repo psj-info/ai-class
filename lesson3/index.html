@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>필터 실험실 · 컴퓨터 비전 1차시</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --panel:#FFFFFF; --ink:#17233B; --ink-soft:#4A5A78; --grid:#CFDAEA;
+  --hi:#FFD43B; --hi-ink:#3D2F00; --teal:#12807A; --teal-soft:#DDF1EF; --warn:#B8430B; --warn-soft:#FBE7DC;
+  --cell-empty:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+    --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416; --hi-ink:#2B2100; --cell-empty:#0B1220;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1726; --panel:#17223A; --ink:#E6ECF5; --ink-soft:#9FB0CC; --grid:#2A3A55;
+  --teal:#43C1B8; --teal-soft:#123A3A; --warn:#FF9A63; --warn-soft:#3A2416; --hi-ink:#2B2100; --cell-empty:#0B1220;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px); height:100%; scroll-behavior:smooth}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; font-size:16px; line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px; background-attachment:fixed}
+h1,h2,h3{font-family:"Do Hyeon","IBM Plex Sans KR",sans-serif; font-weight:400; line-height:1.2; margin:0}
+h3{font-size:1.35rem; margin-top:22px}
+button,input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--teal); outline-offset:2px}
+a{color:var(--teal)}
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:10; background:var(--bg); border-bottom:2px solid var(--ink)}
+.topbar-inner{max-width:920px; margin:0 auto; padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.brand{font-family:"Do Hyeon",sans-serif; font-size:1.35rem; margin-right:auto}
+.steps{display:flex; gap:6px; flex-wrap:wrap}
+.steps a{display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 8px; border:2px solid var(--ink); border-radius:6px; text-decoration:none; color:var(--ink); background:var(--panel); font-family:"Do Hyeon",sans-serif; font-size:1.05rem}
+.steps a:hover{background:var(--hi); color:var(--hi-ink)}
+main{max-width:920px; margin:0 auto; padding:24px 16px 64px}
+.hero{padding:28px 0 8px}
+.hero h1{font-size:clamp(2.1rem,6vw,3.3rem)}
+.hero p{max-width:60ch; color:var(--ink-soft); margin:10px 0 0}
+.book{font-size:.85rem; color:var(--ink-soft)}
+section.act{background:var(--panel); border:2px solid var(--ink); border-radius:10px; margin:28px 0; padding:22px 20px 24px; box-shadow:6px 6px 0 var(--ink)}
+@media (max-width:520px){section.act{padding:18px 14px 20px; box-shadow:4px 4px 0 var(--ink)}}
+.act-head{display:flex; gap:14px; align-items:baseline; margin-bottom:6px}
+.num{font-family:"Do Hyeon",sans-serif; font-size:2.6rem; line-height:1; color:var(--teal); min-width:1.2em}
+.act-head h2{font-size:1.75rem}
+.lead{color:var(--ink-soft); margin:4px 0 16px; max-width:65ch}
+.note{font-size:.92rem; color:var(--ink-soft)}
+.btn{border:2px solid var(--ink); background:var(--panel); border-radius:6px; padding:7px 14px; cursor:pointer; font-weight:500}
+.btn:hover{background:var(--teal-soft)}
+.btn[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.btn.primary{background:var(--ink); color:var(--bg)}
+.btn.primary:hover{background:var(--teal); border-color:var(--teal); color:#fff}
+.btn:disabled{opacity:.5; cursor:default}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.feedback{margin-top:14px; padding:12px 14px; border-radius:8px; border-left:5px solid var(--teal); background:var(--teal-soft)}
+.feedback.bad{border-left-color:var(--warn); background:var(--warn-soft)}
+.hidden{display:none !important}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.92rem; background:var(--bg); border:1px solid var(--grid); border-radius:6px; padding:8px 10px; overflow-x:auto; white-space:pre-wrap; word-break:break-all}
+input[type=range]{accent-color:var(--teal); width:100%; max-width:360px}
+input[type=text],input[type=number],select,textarea{padding:7px 9px; border:2px solid var(--ink); border-radius:6px; background:var(--panel)}
+input[type=number]{width:84px}
+input.ok,select.ok{border-color:var(--teal); background:var(--teal-soft)}
+input.no,select.no{border-color:var(--warn); background:var(--warn-soft)}
+textarea{width:100%; min-height:70px; resize:vertical}
+.field{display:block; margin:12px 0}
+.field > span{display:block; font-weight:500; margin-bottom:4px}
+.field input[type=text]{width:100%}
+.tbl-wrap{overflow-x:auto}
+table.data{border-collapse:collapse; width:100%}
+table.data th,table.data td{border-bottom:1px solid var(--grid); padding:8px 10px; text-align:left; vertical-align:middle}
+table.data th{border-bottom:2px solid var(--ink)}
+.q{border-top:1px dashed var(--grid); padding:14px 0}
+.q:first-child{border-top:0}
+.q p{margin:0 0 8px; font-weight:500}
+.opts{display:grid; gap:6px}
+.opt{text-align:left; border:2px solid var(--ink); border-radius:6px; padding:8px 12px; background:var(--panel); cursor:pointer}
+.opt:hover{background:var(--teal-soft)}
+.opt.right{background:var(--teal-soft); border-color:var(--teal)}
+.opt.wrong{background:var(--warn-soft); border-color:var(--warn)}
+.opt:disabled{cursor:default}
+.explain{margin-top:8px; font-size:.95rem; color:var(--ink-soft)}
+.score{font-family:"Do Hyeon",sans-serif; font-size:1.5rem; margin-top:10px}
+.checks label{display:flex; gap:10px; align-items:flex-start; padding:6px 0; cursor:pointer}
+.checks input{width:20px; height:20px; margin-top:3px; accent-color:var(--teal)}
+.kws{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px}
+.kw{border:2px solid var(--ink); border-radius:999px; padding:2px 12px; font-size:.92rem; background:var(--panel)}
+.kw.used{background:var(--hi); color:var(--hi-ink)}
+.stu{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:12px}
+.stu label{display:block; font-weight:500; font-size:.92rem}
+.stu input{width:100%}
+.preview{margin-top:16px}
+.preview img{display:block; width:100%; max-width:560px; border:2px solid var(--ink); border-radius:6px; background:#fff}
+.preview p{font-size:.92rem; color:var(--ink-soft)}
+footer{max-width:920px; margin:0 auto; padding:0 16px 40px; color:var(--ink-soft); font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important; scroll-behavior:auto !important}}
+
+.paint{display:grid; grid-template-columns:repeat(5,52px); gap:4px; margin:6px 0 10px}
+@media (max-width:400px){.paint{grid-template-columns:repeat(5,44px)}}
+.paint button{aspect-ratio:1/1; border:2px solid var(--ink); border-radius:4px; background:var(--cell-empty); cursor:pointer; font-variant-numeric:tabular-nums; font-size:.9rem}
+.paint button.ink{background:#17233B; color:#E6ECF5}
+.flat{display:flex; flex-wrap:wrap; gap:2px; margin-top:10px}
+.flat span{width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:.7rem; border:1px solid var(--grid); background:var(--cell-empty)}
+.flat span.ink{background:#17233B; color:#E6ECF5}
+.flat span.stem{outline:3px solid var(--hi); outline-offset:-3px}
+.rgbmix{display:grid; grid-template-columns:1fr 120px; gap:16px; align-items:center; max-width:520px}
+.rgbmix label{display:grid; grid-template-columns:20px 1fr 40px; gap:8px; align-items:center; font-weight:700}
+.sw{width:120px; height:120px; border:2px solid var(--ink); border-radius:8px}
+.sw.small{width:34px; height:34px; border-radius:4px; display:inline-block; vertical-align:middle}
+.scene{width:100%; max-width:520px; display:block; border:2px solid var(--ink); border-radius:8px; background:#EAF3E3}
+.modes{display:flex; gap:6px; flex-wrap:wrap; margin:12px 0 8px}
+table.mat{border-collapse:collapse; font-variant-numeric:tabular-nums}
+table.mat td{width:52px; height:52px; text-align:center; border:2px solid var(--ink); font-size:1.15rem; position:relative; background:var(--cell-empty)}
+table.mat td small{position:absolute; right:3px; bottom:1px; font-size:.68rem; color:var(--teal); font-weight:700}
+table.mat td.win{background:var(--hi); color:var(--hi-ink)}
+table.mat td.win small{color:#5a4200}
+table.mat.filter td{background:var(--teal-soft)}
+table.mat td.q0{background:#DCE8FA} table.mat td.q1{background:#FCE9C6} table.mat td.q2{background:#DDF1E3} table.mat td.q3{background:#F6DDE6}
+:root[data-theme="dark"] table.mat td.q0, :root[data-theme="dark"] table.mat td.q1, :root[data-theme="dark"] table.mat td.q2, :root[data-theme="dark"] table.mat td.q3{color:#17233B}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) table.mat td.q0, :root:not([data-theme="light"]) table.mat td.q1, :root:not([data-theme="light"]) table.mat td.q2, :root:not([data-theme="light"]) table.mat td.q3{color:#17233B} }
+table.mat td input{width:100%; height:100%; text-align:center; padding:2px; border:0; border-radius:0; background:transparent; font-size:1.05rem; -moz-appearance:textfield; appearance:textfield}
+table.mat td input::-webkit-outer-spin-button, table.mat td input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+table.mat td:has(input){padding:0; background:var(--panel)}
+table.mat td input.ok{background:var(--teal-soft)} table.mat td input.no{background:var(--warn-soft)}
+.mats{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start}
+.mats figure{margin:0}
+.mats figcaption{font-weight:500; margin-bottom:6px}
+.expr{margin:12px 0 4px; font-variant-numeric:tabular-nums}
+.lab{display:grid; grid-template-columns:minmax(0,300px) minmax(0,300px); gap:18px; align-items:start}
+@media (max-width:680px){.lab{grid-template-columns:1fr}}
+.lab canvas{width:100%; aspect-ratio:1/1; border:2px solid var(--ink); border-radius:6px; display:block; touch-action:none; background:var(--cell-empty)}
+.lab canvas#paintCv{cursor:crosshair}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner"><div class="brand">필터 실험실</div><nav class="steps" aria-label="활동 바로가기"><a href="#a1" title="컴퓨터의 눈">1</a><a href="#a2" title="4분야">2</a><a href="#a3" title="객체 탐지">3</a><a href="#a4" title="합성곱과 풀링">4</a><a href="#a5" title="CNN 정리">5</a><a href="#a6" title="내용 정리">6</a><a href="#a7" title="결과 저장">7</a></nav></div></header>
+<main>
+
+  <div class="hero">
+    <h1>컴퓨터는 이미지를 숫자로 본다</h1>
+    <p>사람은 사진을 한눈에 알아보지만 컴퓨터에게 사진은 숫자의 표예요. 오늘은 컴퓨터가 그 숫자에서 특징을 찾아내는 방법, 합성곱 신경망(CNN)을 직접 계산해 봅니다.</p>
+    <p class="book">교과서 102~105쪽 · 컴퓨터 비전의 이해와 합성곱 신경망</p>
+  </div>
+
+  <section class="act" id="a1">
+    <div class="act-head"><span class="num">1</span><h2>컴퓨터의 눈으로 보기</h2></div>
+    <p class="lead">흑백 이미지의 각 픽셀은 0(검은색)부터 255(흰색) 사이의 값을 가져요. 숫자만 보고, 값이 0인 칸을 눌러 검게 칠해 보세요.</p>
+    <div class="paint" id="paint" aria-label="5×5 픽셀 칸"></div>
+    <div class="row"><button class="btn primary" id="paintCheck">다 칠했어요</button><button class="btn" id="paintReset">지우기</button></div>
+    <div class="feedback hidden" id="paintFb"></div>
+    <div class="hidden" id="flatWrap">
+      <h3>한 줄로 펼치면?</h3>
+      <p class="note">지난 수업처럼 이 그림을 25칸 한 줄로 펼쳤어요. 노란 테두리가 T의 세로줄이에요.</p>
+      <div class="flat" id="flat"></div>
+      <label class="field"><span>생각해 보기: 한 줄로 펼치면 어떤 정보가 사라질까요?</span><textarea id="a1think" maxlength="300"></textarea></label>
+    </div>
+
+    <h3>RGB로 색 만들기</h3>
+    <p class="note">컬러 이미지는 빨강(R), 초록(G), 파랑(B)의 밝기(0~255)를 섞어 한 픽셀의 색을 만들어요. 막대를 움직여 아래 문제의 색을 직접 만들어 보세요.</p>
+    <div class="rgbmix">
+      <div>
+        <label>R <input type="range" id="rR" min="0" max="255" value="255"><span id="rRv">255</span></label>
+        <label>G <input type="range" id="rG" min="0" max="255" value="0"><span id="rGv">0</span></label>
+        <label>B <input type="range" id="rB" min="0" max="255" value="0"><span id="rBv">0</span></label>
+      </div>
+      <div class="sw" id="rgbSw" aria-label="섞은 색"></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:14px"><table class="data" id="rgbQ"></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="rgbCheck">색 확인하기</button></div>
+    <div class="feedback hidden" id="rgbFb"></div>
+  </section>
+
+  <section class="act" id="a2">
+    <div class="act-head"><span class="num">2</span><h2>컴퓨터 비전 4분야</h2></div>
+    <p class="lead">같은 장면이라도 무엇을 알고 싶은지에 따라 결과가 달라요. 버튼을 눌러 네 분야의 결과를 비교해 보세요.</p>
+    <div class="modes" id="modes">
+      <button class="btn" data-m="cls">이미지 분류</button><button class="btn" data-m="loc">객체 위치 식별</button>
+      <button class="btn" data-m="det">객체 탐지</button><button class="btn" data-m="seg">이미지 분할</button>
+    </div>
+    <svg class="scene" id="scene" viewBox="0 0 360 220" role="img" aria-label="컴퓨터 비전 분야별 결과 그림"></svg>
+    <p id="sceneTxt" style="margin:10px 0 0"></p>
+
+    <h3>어떤 분야일까?</h3>
+    <div class="tbl-wrap"><table class="data" id="fieldQ"></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="fieldCheck">확인하기</button></div>
+    <div class="feedback hidden" id="fieldFb"></div>
+  </section>
+
+  <section class="act" id="a3">
+    <div class="act-head"><span class="num">3</span><h2>객체 탐지 체험하기</h2></div>
+    <p class="lead">ETRI 기술체험 플랫폼의 객체 검출 데모에서 예시 이미지를 하나 고르고 ‘분석하기’를 눌러 보세요. (교과서 103쪽의 주소가 바뀌었어요.)</p>
+    <p><a href="https://epretx.etri.re.kr/api/demo/od" target="_blank" rel="noopener">epretx.etri.re.kr/api/demo/od 열기</a></p>
+    <label class="field"><span>고른 이미지</span><input type="text" id="a3img" maxlength="60" placeholder="예: 고양이 사진"></label>
+    <label class="field"><span>탐지한 객체</span><input type="text" id="a3found" maxlength="120" placeholder="예: cat, person"></label>
+    <label class="field"><span>눈으로는 보이지만 탐지하지 못한 객체</span><input type="text" id="a3miss" maxlength="120"></label>
+    <label class="field"><span>탐지하지 못한 이유는 무엇일까요? (힌트: ‘API 설명’에서 인식 가능한 객체 목록 확인)</span><textarea id="a3why" maxlength="300"></textarea></label>
+    <label class="field"><span>탐지하게 하려면 어떻게 해야 할까요? (친구들과 이야기한 내용)</span><textarea id="a3fix" maxlength="300"></textarea></label>
+  </section>
+
+  <section class="act" id="a4">
+    <div class="act-head"><span class="num">4</span><h2>합성곱과 풀링 계산하기</h2></div>
+    <p class="lead">필터(3×3)를 입력 위에 올려놓고, 겹치는 칸끼리 곱한 뒤 모두 더해요. 단계 버튼을 누르면 필터가 올라가는 자리가 노랗게 표시되고, 칸 오른쪽 아래에 곱할 필터 값이 보여요.</p>
+    <div class="row" id="convSteps" style="margin-bottom:12px">
+      <button class="btn" data-s="0">1단계</button><button class="btn" data-s="1">2단계</button><button class="btn" data-s="2">3단계</button><button class="btn" data-s="3">4단계</button>
+    </div>
+    <div class="mats">
+      <figure><figcaption>입력 (4×4)</figcaption><table class="mat" id="convIn"></table></figure>
+      <figure><figcaption>필터 (3×3)</figcaption><table class="mat filter" id="convF"></table></figure>
+      <figure><figcaption>출력 (2×2)</figcaption><table class="mat" id="convOut"></table></figure>
+    </div>
+    <p class="expr" id="convExpr"></p>
+    <div class="row hidden" id="convAsk"><label for="convAns">이 단계의 결과는?</label><input type="number" id="convAns"><button class="btn primary" id="convCheck">확인</button><button class="btn" id="convHint">곱셈식 보기</button></div>
+    <div class="feedback hidden" id="convFb"></div>
+
+    <h3>필터 실험실</h3>
+    <p class="note">왼쪽 칸에 그림을 그리고 필터를 골라 보세요. 오른쪽은 필터를 통과한 결과(특징 맵)예요. 진할수록 그 필터가 찾는 특징이 강하게 나타난 자리예요. 음수는 0으로 바꿨어요(지난 시간의 렐루).</p>
+    <div class="row" style="margin:8px 0"><span>예시 그림:</span><button class="btn" data-sp="v">세로선</button><button class="btn" data-sp="h">가로선</button><button class="btn" data-sp="box">사각형</button><button class="btn" data-sp="x">X자</button><button class="btn" id="labClear">지우기</button></div>
+    <div class="row" id="filterPick" style="margin:8px 0"><span>필터:</span><button class="btn" data-f="v">세로선 필터</button><button class="btn" data-f="h">가로선 필터</button><button class="btn" data-f="d">대각선 필터</button><button class="btn" data-f="e">경계선 필터</button></div>
+    <div class="lab">
+      <figure style="margin:0"><figcaption>내 그림 (12×12)</figcaption><canvas id="paintCv" aria-label="그림 그리는 칸"></canvas></figure>
+      <figure style="margin:0"><figcaption id="fmCap">특징 맵 (10×10)</figcaption><canvas id="fmCv" aria-label="특징 맵"></canvas></figure>
+    </div>
+    <div class="mats" style="margin-top:10px"><figure><figcaption>지금 고른 필터</figcaption><table class="mat filter" id="labF"></table></figure></div>
+
+    <h3>도전: 어느 필터가 세로선을 찾을까?</h3>
+    <p class="note">세로선이 있는 입력에 필터 A(세로)와 필터 B(가로)를 각각 적용해 출력을 구해 보세요.</p>
+    <div class="mats">
+      <figure><figcaption>입력</figcaption><table class="mat" id="chIn"></table></figure>
+      <figure><figcaption>필터 A (세로)</figcaption><table class="mat filter" id="chA"></table></figure>
+      <figure><figcaption>필터 B (가로)</figcaption><table class="mat filter" id="chB"></table></figure>
+    </div>
+    <div class="mats" style="margin-top:10px">
+      <figure><figcaption>필터 A의 출력</figcaption><table class="mat" id="chOutA"></table></figure>
+      <figure><figcaption>필터 B의 출력</figcaption><table class="mat" id="chOutB"></table></figure>
+    </div>
+    <div class="row" style="margin-top:10px"><label for="chWho">세로선에 더 크게 반응한 필터는?</label><select id="chWho"><option value="">고르기</option><option value="A">필터 A</option><option value="B">필터 B</option></select><button class="btn primary" id="chCheck">확인</button></div>
+    <div class="feedback hidden" id="chFb"></div>
+
+    <h3>최댓값 풀링</h3>
+    <p class="note">4×4를 색깔별 2×2 영역 4개로 나누고, 각 영역에서 가장 큰 값 하나만 남겨요.</p>
+    <div class="mats">
+      <figure><figcaption>입력 (4×4)</figcaption><table class="mat" id="poolIn"></table></figure>
+      <figure><figcaption>최댓값 풀링 결과</figcaption><table class="mat" id="poolMax"></table></figure>
+      <figure><figcaption>도전: 평균 풀링 결과</figcaption><table class="mat" id="poolAvg"></table></figure>
+    </div>
+    <div class="row" style="margin-top:10px"><label for="poolSize">풀링 후 데이터는 몇 칸?</label><input type="number" id="poolSize"><button class="btn primary" id="poolCheck">확인</button></div>
+    <div class="feedback hidden" id="poolFb"></div>
+  </section>
+
+  <section class="act" id="a5">
+    <div class="act-head"><span class="num">5</span><h2>합성곱 신경망 정리하기</h2></div>
+    <p class="lead">합성곱 신경망은 합성곱층, 풀링층, 완전 연결층으로 이루어져요. 각 층이 하는 일을 골라 보세요.</p>
+    <div class="tbl-wrap"><table class="data" id="layerQ"></table></div>
+    <h3>얼굴 이미지가 필터를 통과하며 찾는 특징</h3>
+    <div class="tbl-wrap"><table class="data" id="orderQ"></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="cnnCheck">확인하기</button></div>
+    <div class="feedback hidden" id="cnnFb"></div>
+    <label class="field" style="margin-top:18px"><span>한 문장 쓰기: 합성곱 신경망은 ‘학습’하면서 무엇을 만들어 갈까요? (교과서 105쪽 아래 상자)</span><textarea id="a5learn" maxlength="300"></textarea></label>
+    <label class="field"><span>과제: <a href="https://poloclub.github.io/cnn-explainer/" target="_blank" rel="noopener">CNN Explainer</a>에서 이미지를 하나 고르고, 층을 지날수록 그림이 어떻게 변하는지 한 줄로 적어 보세요.</span><textarea id="a5exp" maxlength="300"></textarea></label>
+    <h3>성취도 자기 점검</h3>
+    <div class="checks" id="selfChk"></div>
+  </section>
+
+  <section class="act" id="a6">
+    <div class="act-head"><span class="num">6</span><h2>오늘 배운 내용 정리</h2></div>
+    <p class="lead">오늘 활동을 떠올리며 배운 내용을 내 말로 정리해요. 아래 핵심 낱말을 문장에 쓰면 노랗게 표시돼요. 정리한 내용은 제출 이미지 맨 위에 들어가요.</p>
+    <p style="margin:0 0 6px; font-weight:500">핵심 낱말</p>
+    <div class="kws" id="kws"><span class="kw" data-w="픽셀">픽셀</span><span class="kw" data-w="RGB">RGB</span><span class="kw" data-w="이미지 분류">이미지 분류</span><span class="kw" data-w="객체 탐지">객체 탐지</span><span class="kw" data-w="이미지 분할">이미지 분할</span><span class="kw" data-w="합성곱">합성곱</span><span class="kw" data-w="필터">필터</span><span class="kw" data-w="특징 맵">특징 맵</span><span class="kw" data-w="풀링">풀링</span><span class="kw" data-w="완전 연결층">완전 연결층</span><span class="kw" data-w="합성곱 신경망">합성곱 신경망</span></div>
+    <label class="field"><span>① 오늘 배운 내용을 세 문장 정도로 정리해 보세요. 핵심 낱말을 2개 이상 넣어 보세요.</span><textarea id="sumMain" maxlength="500" style="min-height:110px"></textarea></label>
+    <p class="note" id="sumUsed" style="margin:-4px 0 0">사용한 핵심 낱말: 0개</p>
+    <label class="field"><span>② 가장 기억에 남는 활동과 그 이유</span><textarea id="sumBest" maxlength="300"></textarea></label>
+    <label class="field"><span>③ 더 알고 싶거나 궁금한 점</span><textarea id="sumQ" maxlength="300"></textarea></label>
+  </section>
+  <section class="act" id="a7">
+    <div class="act-head"><span class="num">7</span><h2>결과 저장하고 제출하기</h2></div>
+    <p class="lead">학번과 이름을 쓰고 저장하면 오늘 활동 결과가 이미지 한 장으로 만들어져요. 그 이미지를 구글 클래스룸 과제에 첨부해 제출하세요.</p>
+    <div class="stu">
+      <div><label for="sid">학번</label><input type="text" id="sid" inputmode="numeric" autocomplete="off" placeholder="예: 10315"></div>
+      <div><label for="sname">이름</label><input type="text" id="sname" autocomplete="off" placeholder="예: 홍길동"></div>
+    </div>
+    <div class="row"><button class="btn primary" id="saveCard">결과 이미지 저장</button></div>
+    <div class="feedback bad hidden" id="saveErr"></div>
+    <div class="preview hidden" id="preview">
+      <img id="cardImg" alt="활동 결과 이미지">
+      <p>파일이 자동으로 내려받아지지 않으면 <a id="cardLink" download>여기를 눌러 저장</a>하거나, 이미지를 길게 누르거나(휴대폰) 오른쪽 클릭해(컴퓨터) 저장하세요.</p>
+    </div>
+  </section>
+</main>
+<footer>Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 컴퓨터 비전 1차시 활동용 웹앱</footer>
+<script>
+(function(){
+
+const $=(s)=>document.querySelector(s);
+const $$=(s)=>[...document.querySelectorAll(s)];
+const css=(v)=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const esc=(t)=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const val=(id)=>{const e=document.getElementById(id); return e? e.value.trim():'';};
+function mark(el, ok){ el.classList.remove('ok','no'); el.classList.add(ok?'ok':'no'); }
+function fb(id, ok, html){ const e=document.getElementById(id); e.classList.remove('hidden'); e.classList.toggle('bad',!ok); e.innerHTML=html; }
+function makeQuiz(el, Q, scoreEl){
+  el._chosen=[]; let answered=0, correct=0; if(scoreEl) scoreEl.textContent='';
+  el.innerHTML=Q.map((x,qi)=>`<div class="q"><p>${Q.length>1?(qi+1)+'. ':''}${x.q}</p><div class="opts">${x.o.map((o,oi)=>`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`).join('')}</div><div class="explain hidden"></div></div>`).join('');
+  el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const qi=+b.dataset.q, oi=+b.dataset.o; const box=b.closest('.q'); const btns=box.querySelectorAll('.opt');
+    el._chosen[qi]=oi; btns.forEach(x=>x.disabled=true); btns[Q[qi].a].classList.add('right'); if(oi!==Q[qi].a) b.classList.add('wrong'); else correct++;
+    answered++; const ex=box.querySelector('.explain'); ex.classList.remove('hidden'); ex.textContent=(oi===Q[qi].a?'정답이에요. ':'정답은 '+(Q[qi].a+1)+'번 보기예요. ')+Q[qi].e;
+    if(scoreEl && answered===Q.length) scoreEl.textContent=`${Q.length}문제 중 ${correct}문제 맞혔어요`;
+  });
+}
+function quizLines(Q,chosen){ chosen=chosen||[]; const n=chosen.filter(v=>v!==undefined).length; const ok=Q.filter((q,i)=>chosen[i]===q.a).length;
+  const out=[`점수: ${ok} / ${Q.length}  (푼 문제 ${n}개)`];
+  Q.forEach((q,i)=>{ const c=chosen[i]; out.push(c===undefined? `${i+1}. 풀지 않음` : (c===q.a? `${i+1}. ○ ${q.o[c]}` : `${i+1}. × 내 답: ${q.o[c]}`)); }); return out; }
+function wrap(x,text,maxW){const out=[];String(text).split('\n').forEach(par=>{let line='';par.split(/(\s+)/).forEach(tok=>{ if(!tok) return; const t=line+tok; if(x.measureText(t).width<=maxW){line=t;return;} if(line.trim()){out.push(line.trimEnd()); line='';} tok=tok.replace(/^\s+/,''); for(const ch of tok){ const t2=line+ch; if(x.measureText(t2).width>maxW && line){out.push(line); line=ch;} else line=t2; } }); out.push(line.trimEnd());}); return out;}
+async function renderCard(o){
+  try{ await Promise.all([document.fonts.load('28px "Do Hyeon"'), document.fonts.load('18px "IBM Plex Sans KR"'), document.fonts.load('bold 18px "IBM Plex Sans KR"')]); }catch(e){}
+  const W=900, P=44, LH=29, BODY='18px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', HEAD='26px "Do Hyeon","IBM Plex Sans KR",sans-serif';
+  const meas=document.createElement('canvas').getContext('2d'); meas.font=BODY;
+  const headH = o.image ? 250 : 210; let h=headH+10; const blocks=[];
+  o.sections.forEach(sec=>{ const lines=[]; sec.lines.forEach(l=>wrap(meas,l,W-2*P-24).forEach(w=>lines.push(w))); blocks.push({h:sec.h, lines}); h+=44+lines.length*LH+22; });
+  h+=50;
+  const c=document.createElement('canvas'); const dpr=2; c.width=W*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,h);
+  x.fillStyle='#17233B'; x.fillRect(0,0,W,10);
+  const maxT = W-2*P-(o.image?188:0); let fsz=34; x.font=fsz+'px "Do Hyeon",sans-serif'; while(x.measureText(o.title).width>maxT && fsz>20){ fsz-=1; x.font=fsz+'px "Do Hyeon",sans-serif'; } x.fillText(o.title,P,62);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText(o.subtitle,P,94);
+  x.fillStyle='#17233B'; x.font='bold 22px "IBM Plex Sans KR",sans-serif'; x.fillText(`${o.sid}  ${o.name}`,P,138);
+  x.font=BODY; x.fillStyle='#4A5A78'; x.fillText('저장 시각: '+new Date().toLocaleString('ko-KR'),P,168);
+  if(o.image){ const n=o.image.n, box=168, cs=box/n, dx=W-P-box, dy=34;
+    for(let r=0;r<n;r++) for(let cc=0;cc<n;cc++){ const v=o.image.data[r*n+cc]; const g=Math.round(255-v*232); x.fillStyle=`rgb(${g},${g},${Math.min(255,g+12)})`; x.fillRect(dx+cc*cs,dy+r*cs,cs+.5,cs+.5); }
+    x.strokeStyle='#17233B'; x.lineWidth=2; x.strokeRect(dx,dy,box,box);
+    x.font='15px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.textAlign='center'; x.fillText(o.image.label,dx+box/2,dy+box+22); x.textAlign='left'; }
+  let y=headH; x.strokeStyle='#CFDAEA'; x.lineWidth=2; x.beginPath(); x.moveTo(P,y-14); x.lineTo(W-P,y-14); x.stroke();
+  blocks.forEach(b=>{ x.fillStyle='#FFD43B'; x.fillRect(P,y+6,6,26); x.fillStyle='#17233B'; x.font=HEAD; x.fillText(b.h,P+16,y+30); y+=44;
+    x.font=BODY; b.lines.forEach(l=>{ x.fillStyle = /^\s*\d+\.\s*×/.test(l)? '#B8430B' : '#17233B'; x.fillText(l,P+16,y+20); y+=LH; }); y+=22; });
+  x.font='14px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.fillText(o.footer,P,h-24);
+  return c.toDataURL('image/png');
+}
+async function saveResult(o, prefix){
+  const sid=$('#sid').value.trim(), name=$('#sname').value.trim(), err=$('#saveErr');
+  if(!sid||!name){ err.classList.remove('hidden'); err.textContent='학번과 이름을 모두 써 주세요.'; return; }
+  err.classList.add('hidden'); const btn=$('#saveCard'); btn.disabled=true; btn.textContent='만드는 중…';
+  try{
+    const url=await renderCard(Object.assign({sid,name},o));
+    const file=`${prefix}_${sid}_${name}.png`.replace(/[\\/:*?"<>|\s]+/g,'_');
+    $('#cardImg').src=url; const a=$('#cardLink'); a.href=url; a.download=file; $('#preview').classList.remove('hidden');
+    try{ a.click(); }catch(e){}
+  }catch(e){ err.classList.remove('hidden'); err.textContent='이미지를 만들지 못했어요. 다시 눌러 보세요.'; }
+  btn.disabled=false; btn.textContent='결과 이미지 저장';
+}
+const orBlank=(t)=>t||'(쓰지 않음)';
+function initSummary(){ const ta=$('#sumMain'); if(!ta) return; const upd=()=>{ const t=ta.value; const used=$$('#kws .kw').filter(k=>{ const hit=t.includes(k.dataset.w); k.classList.toggle('used',hit); return hit; }).map(k=>k.dataset.w); $('#sumUsed').textContent=`사용한 핵심 낱말: ${used.length}개${used.length?' ('+used.join(', ')+')':''}`; ta._used=used; }; ta.addEventListener('input',upd); upd(); }
+function summarySection(){ const used=($('#sumMain')._used)||[]; return {h:'오늘 배운 내용 정리', lines:[ orBlank(val('sumMain')), `사용한 핵심 낱말: ${used.length? used.join(', ') : '없음'}`, `기억에 남는 활동: ${orBlank(val('sumBest'))}`, `궁금한 점: ${orBlank(val('sumQ'))}` ]}; }
+function summaryReady(){ if(val('sumMain')) return true; const err=$('#saveErr'); err.classList.remove('hidden'); err.innerHTML='‘오늘 배운 내용 정리’의 ①을 먼저 써 주세요. <a href="#sumMain">정리하러 가기</a>'; return false; }
+
+
+const st={paint:false, paintTries:0, rgb:null, field:null, conv:[true,true,false,false], ch:null, pool:null, cnn:null};
+
+/* ---------- 1. 픽셀 ---------- */
+const PV=[[0,0,0,0,0],[255,255,0,255,255],[255,255,0,255,255],[255,255,0,255,255],[255,255,0,255,255]];
+const paint=$('#paint');
+PV.forEach((row,r)=>row.forEach((v,c)=>{ const b=document.createElement('button'); b.textContent=v; b.setAttribute('aria-label',`${r+1}행 ${c+1}열 값 ${v}`); b.onclick=()=>b.classList.toggle('ink'); paint.appendChild(b); }));
+$('#paintReset').onclick=()=>{ [...paint.children].forEach(b=>b.classList.remove('ink')); $('#paintFb').classList.add('hidden'); };
+$('#paintCheck').onclick=()=>{
+  st.paintTries++; let wrong=0;
+  [...paint.children].forEach((b,i)=>{ const should=PV[Math.floor(i/5)][i%5]===0; if(b.classList.contains('ink')!==should) wrong++; });
+  if(wrong===0){ st.paint=true; fb('paintFb',true,'정확해요! 알파벳 <b>T</b>가 나타났어요. 컴퓨터는 이 그림을 이렇게 숫자의 표로 저장해요.'); drawFlat(); $('#flatWrap').classList.remove('hidden'); }
+  else fb('paintFb',false,`${wrong}칸이 달라요. 값이 <b>0</b>인 칸만 칠해야 해요.`);
+};
+function drawFlat(){ const f=$('#flat'); f.innerHTML=''; PV.flat().forEach((v,i)=>{ const s=document.createElement('span'); s.textContent=i+1; if(v===0) s.classList.add('ink'); if(i%5===2) s.classList.add('stem'); f.appendChild(s); }); }
+
+const RGBQ=[[255,255,0,'노랑'],[0,0,0,'검정'],[255,255,255,'흰색'],[0,255,255,'청록'],[255,0,255,'자홍']];
+const CNAMES=['빨강','초록','파랑','노랑','검정','흰색','청록','자홍'];
+function updMix(){ const r=$('#rR').value,g=$('#rG').value,b=$('#rB').value; $('#rRv').textContent=r; $('#rGv').textContent=g; $('#rBv').textContent=b; $('#rgbSw').style.background=`rgb(${r},${g},${b})`; }
+['#rR','#rG','#rB'].forEach(s=>$(s).oninput=updMix); updMix();
+$('#rgbQ').innerHTML='<tr><th>RGB 값</th><th>어떤 색일까?</th><th>확인</th></tr><tr><td>(255, 0, 0)</td><td>빨강 (예시)</td><td><span class="sw small" style="background:rgb(255,0,0)"></span></td></tr>'+
+  RGBQ.map((q,i)=>`<tr><td>(${q[0]}, ${q[1]}, ${q[2]})</td><td><select id="rq${i}"><option value="">고르기</option>${CNAMES.map(n=>`<option>${n}</option>`).join('')}</select></td><td><span class="sw small hidden" id="rs${i}" style="background:rgb(${q[0]},${q[1]},${q[2]})"></span></td></tr>`).join('');
+$('#rgbCheck').onclick=()=>{ let ok=0; RGBQ.forEach((q,i)=>{ const s=$('#rq'+i); const good=s.value===q[3]; if(good) ok++; mark(s,good); $('#rs'+i).classList.remove('hidden'); });
+  st.rgb=ok; fb('rgbFb',ok===5, ok===5? '5개 모두 맞혔어요! 빛의 삼원색을 모두 최대로 섞으면 흰색, 모두 0이면 검은색이에요.' : `5개 중 ${ok}개를 맞혔어요. 막대로 직접 섞어 보고 다시 골라 보세요.`); };
+
+/* ---------- 2. 4분야 ---------- */
+function cat(x,y,s,fill){ return `<g><polygon points="${x-s*.9},${y-s*.45} ${x-s*.55},${y-s*1.55} ${x-s*.1},${y-s*.85}" fill="${fill}"/><polygon points="${x+s*.9},${y-s*.45} ${x+s*.55},${y-s*1.55} ${x+s*.1},${y-s*.85}" fill="${fill}"/><circle cx="${x}" cy="${y}" r="${s}" fill="${fill}"/><circle cx="${x-s*.35}" cy="${y-s*.1}" r="${s*.12}" fill="#17233B"/><circle cx="${x+s*.35}" cy="${y-s*.1}" r="${s*.12}" fill="#17233B"/><polygon points="${x-s*.12},${y+s*.25} ${x+s*.12},${y+s*.25} ${x},${y+s*.4}" fill="#C0626F"/><rect x="${x-s*.8}" y="${y+s*.9}" width="${s*1.6}" height="${s*.75}" rx="${s*.3}" fill="${fill}"/></g>`; }
+function dog(x,y,s,fill,ear){ return `<g><ellipse cx="${x-s*1.05}" cy="${y+s*.1}" rx="${s*.38}" ry="${s*.75}" fill="${ear}"/><ellipse cx="${x+s*1.05}" cy="${y+s*.1}" rx="${s*.38}" ry="${s*.75}" fill="${ear}"/><circle cx="${x}" cy="${y}" r="${s}" fill="${fill}"/><circle cx="${x-s*.35}" cy="${y-s*.15}" r="${s*.12}" fill="#17233B"/><circle cx="${x+s*.35}" cy="${y-s*.15}" r="${s*.12}" fill="#17233B"/><ellipse cx="${x}" cy="${y+s*.35}" rx="${s*.22}" ry="${s*.15}" fill="#17233B"/></g>`; }
+const boxCat=(x,y,s)=>[x-s*1.05,y-s*1.65,s*2.1,s*3.35]; const boxDog=(x,y,s)=>[x-s*1.5,y-s*1.1,s*3,s*2.0];
+function rect(b,col,label){ return `<rect x="${b[0]}" y="${b[1]}" width="${b[2]}" height="${b[3]}" fill="none" stroke="${col}" stroke-width="3"/><rect x="${b[0]-1.5}" y="${b[1]-20}" width="${label.length*8+14}" height="20" fill="${col}"/><text x="${b[0]+5}" y="${b[1]-5}" font-size="13" fill="#fff" font-family="IBM Plex Sans KR, sans-serif" font-weight="700">${label}</text>`; }
+const SCN={
+  cls:'이미지 전체를 하나로 보고, 이 이미지가 어떤 범주에 속하는지 분류해요. 위치는 알려 주지 않아요.',
+  loc:'객체가 하나일 때, 무엇인지 분류하고 어디에 있는지 상자로 표시해요.',
+  det:'여러 객체가 있을 때 각 객체의 위치를 상자로 찾고, 각각 무엇인지 분류해요.',
+  seg:'상자가 아니라 객체에 속하는 범위를 픽셀 단위로 칠해요.'
+};
+function drawScene(m){
+  $$('#modes .btn').forEach(b=>b.setAttribute('aria-pressed', b.dataset.m===m?'true':'false'));
+  let s='<rect width="360" height="220" fill="#EAF3E3"/><rect y="170" width="360" height="50" fill="#CFE3BF"/>';
+  if(m==='cls'||m==='loc'){
+    s+=cat(180,120,34,'#E7A55B');
+    if(m==='cls') s+='<rect x="12" y="12" width="150" height="30" rx="6" fill="#17233B"/><text x="24" y="33" font-size="16" fill="#fff" font-family="IBM Plex Sans KR, sans-serif" font-weight="700">결과: Cat (고양이)</text>';
+    else s+=rect(boxCat(180,120,34),'#B8430B','Cat');
+  } else {
+    const animals=[['dog',80,125,30],['dog',180,115,32],['cat',285,125,28]];
+    if(m==='seg'){
+      const cols={dog1:'#2B6CB0',dog2:'#7E3AF2',cat:'#D97706'};
+      animals.forEach((a,i)=>{ const col= a[0]==='cat'? cols.cat : (i===0?cols.dog1:cols.dog2); s+= a[0]==='cat'? cat(a[1],a[2],a[3],col) : dog(a[1],a[2],a[3],col,col); });
+      s+='<text x="12" y="28" font-size="13" fill="#17233B" font-family="IBM Plex Sans KR, sans-serif" font-weight="700">픽셀마다 색으로 표시: 파랑·보라 = Dog, 주황 = Cat</text>';
+    } else {
+      animals.forEach(a=>{ s+= a[0]==='cat'? cat(a[1],a[2],a[3],'#E7A55B') : dog(a[1],a[2],a[3],'#C8A27A','#8A6240'); });
+      animals.forEach(a=>{ s+= rect(a[0]==='cat'? boxCat(a[1],a[2],a[3]) : boxDog(a[1],a[2],a[3]), a[0]==='cat'?'#B8430B':'#2B6CB0', a[0]==='cat'?'Cat':'Dog'); });
+    }
+  }
+  $('#scene').innerHTML=s; $('#sceneTxt').textContent=SCN[m];
+}
+$$('#modes .btn').forEach(b=>b.onclick=()=>drawScene(b.dataset.m)); drawScene('cls');
+const FIELDS=['이미지 분류','객체 위치 식별','객체 탐지','이미지 분할'];
+const FQ=[['사진 한 장을 보고 ‘고양이 사진’인지 ‘강아지 사진’인지 판단한다.',0],['주차장 CCTV 화면에서 자동차, 사람, 자전거를 각각 찾아 상자를 치고 이름을 붙인다.',2],['자율주행차가 도로에 해당하는 픽셀을 하나하나 칠해 달릴 수 있는 영역을 정한다.',3],['강아지 한 마리만 있는 사진에서 ‘강아지’라고 분류하고 그 위치에 상자를 친다.',1]];
+$('#fieldQ').innerHTML='<tr><th>상황</th><th>분야</th></tr>'+FQ.map((q,i)=>`<tr><td>(${'가나다라'[i]}) ${q[0]}</td><td><select id="fq${i}"><option value="">고르기</option>${FIELDS.map((f,j)=>`<option value="${j}">${f}</option>`).join('')}</select></td></tr>`).join('');
+$('#fieldCheck').onclick=()=>{ let ok=0; FQ.forEach((q,i)=>{ const s=$('#fq'+i); const g=s.value!=='' && +s.value===q[1]; if(g) ok++; mark(s,g); });
+  st.field=ok; fb('fieldFb',ok===4, ok===4? '4개 모두 맞혔어요! (나)와 (라)는 둘 다 상자를 치지만, (라)는 객체가 하나, (나)는 여러 개라는 점이 달라요.' : `4개 중 ${ok}개를 맞혔어요. 위 그림의 네 가지 결과를 다시 비교해 보세요.`); };
+
+/* ---------- 4. 합성곱 ---------- */
+const IN=[[1,2,3,4],[2,1,0,1],[3,0,1,1],[1,4,1,1]], F=[[1,0,1],[1,0,1],[0,1,0]];
+const POS=[[0,0],[0,1],[1,0],[1,1]];
+const conv=(a,f,r0,c0)=>{ let s=0; for(let i=0;i<3;i++) for(let j=0;j<3;j++) s+=a[r0+i][c0+j]*f[i][j]; return s; };
+const RES=POS.map(p=>conv(IN,F,p[0],p[1]));
+const matHTML=(m,cls)=>m.map((row,r)=>'<tr>'+row.map((v,c)=>`<td${cls?` class="${cls(r,c)}"`:''}>${v}</td>`).join('')+'</tr>').join('');
+$('#convF').innerHTML=matHTML(F);
+let cstep=-1;
+function drawConv(){
+  const p=cstep>=0?POS[cstep]:null;
+  $('#convIn').innerHTML=IN.map((row,r)=>'<tr>'+row.map((v,c)=>{ const inw=p && r>=p[0]&&r<p[0]+3&&c>=p[1]&&c<p[1]+3; return `<td class="${inw?'win':''}">${v}${inw?`<small>×${F[r-p[0]][c-p[1]]}</small>`:''}</td>`; }).join('')+'</tr>').join('');
+  $('#convOut').innerHTML=[0,1].map(r=>'<tr>'+[0,1].map(c=>{ const k=r*2+c; return `<td class="${k===cstep?'win':''}">${st.conv[k]?RES[k]:'?'}</td>`; }).join('')+'</tr>').join('');
+  $$('#convSteps .btn').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.s===cstep?'true':'false'));
+}
+function exprOf(k){ const p=POS[k]; const parts=[]; for(let i=0;i<3;i++) for(let j=0;j<3;j++) parts.push(`(${IN[p[0]+i][p[1]+j]}×${F[i][j]})`); return parts.join(' + ')+' = '+RES[k]; }
+$$('#convSteps .btn').forEach(b=>b.onclick=()=>{ cstep=+b.dataset.s; $('#convFb').classList.add('hidden'); $('#convAns').value='';
+  const p=POS[cstep];
+  if(st.conv[cstep]){ $('#convExpr').textContent=exprOf(cstep); $('#convAsk').classList.add('hidden'); }
+  else { $('#convExpr').textContent=`필터가 ${p[0]+1}~${p[0]+3}행, ${p[1]+1}~${p[1]+3}열에 올라갔어요. 노란 칸의 값과 필터 값을 곱해서 모두 더해 보세요.`; $('#convAsk').classList.remove('hidden'); }
+  drawConv(); });
+$('#convHint').onclick=()=>{ const p=POS[cstep]; const parts=[]; for(let i=0;i<3;i++) for(let j=0;j<3;j++) parts.push(`(${IN[p[0]+i][p[1]+j]}×${F[i][j]})`); $('#convExpr').textContent=parts.join(' + ')+' = ?'; };
+$('#convCheck').onclick=()=>{ const v=$('#convAns').value; if(v==='') return;
+  if(+v===RES[cstep]){ st.conv[cstep]=true; $('#convExpr').textContent=exprOf(cstep); $('#convAsk').classList.add('hidden'); drawConv();
+    const done=st.conv.every(Boolean); fb('convFb',true, done? '정답! 출력이 완성됐어요: [[6, 9], [10, 4]]. 이렇게 필터가 한 칸씩 이동하며 계산하는 것을 합성곱 연산이라고 해요.' : '정답! 다음 단계도 계산해 보세요.'); }
+  else fb('convFb',false,'다시 계산해 보세요. 필터 값이 0인 칸은 곱하면 0이 되니 1인 칸만 더하면 돼요.'); };
+cstep=-1; drawConv(); $('#convExpr').textContent='단계 버튼을 눌러 시작하세요. 1, 2단계는 교과서에 계산이 나와 있고, 3, 4단계를 직접 계산해요.';
+
+/* 필터 실험실 */
+const LN=12; const lab=new Float32Array(LN*LN);
+const LF={ v:{n:'세로선 필터',m:[[-1,2,-1],[-1,2,-1],[-1,2,-1]]}, h:{n:'가로선 필터',m:[[-1,-1,-1],[2,2,2],[-1,-1,-1]]}, d:{n:'대각선 필터',m:[[2,-1,-1],[-1,2,-1],[-1,-1,2]]}, e:{n:'경계선 필터',m:[[-1,-1,-1],[-1,8,-1],[-1,-1,-1]]} };
+let lf='v';
+const pc=$('#paintCv'), fc=$('#fmCv');
+function sizeCv(c,n){ const dpr=window.devicePixelRatio||1; const W=300; c.width=W*dpr; c.height=W*dpr; const x=c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); return x; }
+const px=sizeCv(pc), fx=sizeCv(fc);
+function drawLab(){
+  const cs=300/LN; px.clearRect(0,0,300,300);
+  for(let r=0;r<LN;r++) for(let c=0;c<LN;c++){ px.fillStyle= lab[r*LN+c]? '#17233B' : css('--cell-empty'); px.fillRect(c*cs,r*cs,cs,cs); }
+  px.strokeStyle=css('--grid'); px.lineWidth=1; for(let i=0;i<=LN;i++){ px.beginPath(); px.moveTo(i*cs+.5,0); px.lineTo(i*cs+.5,300); px.stroke(); px.beginPath(); px.moveTo(0,i*cs+.5); px.lineTo(300,i*cs+.5); px.stroke(); }
+  const m=LF[lf].m, ON=LN-2, fs=300/ON; let max=0; const out=[];
+  for(let r=0;r<ON;r++) for(let c=0;c<ON;c++){ let s=0; for(let i=0;i<3;i++) for(let j=0;j<3;j++) s+=lab[(r+i)*LN+c+j]*m[i][j]; s=Math.max(0,s); out.push(s); if(s>max) max=s; }
+  const top = lf==='e'?8:6;
+  fx.clearRect(0,0,300,300);
+  out.forEach((v,i)=>{ const t=Math.min(1,v/top); const r=i/ON|0, c=i%ON; fx.fillStyle = t>0? `rgba(18,128,122,${0.15+0.85*t})` : css('--cell-empty'); fx.fillRect(c*fs,r*fs,fs,fs); });
+  fx.strokeStyle=css('--grid'); for(let i=0;i<=ON;i++){ fx.beginPath(); fx.moveTo(i*fs+.5,0); fx.lineTo(i*fs+.5,300); fx.stroke(); fx.beginPath(); fx.moveTo(0,i*fs+.5); fx.lineTo(300,i*fs+.5); fx.stroke(); }
+  $('#fmCap').textContent=`특징 맵 (10×10) · ${LF[lf].n}`;
+  $('#labF').innerHTML=matHTML(m);
+  $$('#filterPick .btn').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===lf?'true':'false'));
+}
+let drawing=false, eraseMode=false;
+function cellAt(e){ const r=pc.getBoundingClientRect(); const c=Math.floor((e.clientX-r.left)/r.width*LN), rr=Math.floor((e.clientY-r.top)/r.height*LN); return (c<0||rr<0||c>=LN||rr>=LN)?-1:rr*LN+c; }
+pc.addEventListener('pointerdown',e=>{ const i=cellAt(e); if(i<0) return; drawing=true; pc.setPointerCapture(e.pointerId); eraseMode=lab[i]===1; lab[i]=eraseMode?0:1; drawLab(); });
+pc.addEventListener('pointermove',e=>{ if(!drawing) return; const i=cellAt(e); if(i<0) return; lab[i]=eraseMode?0:1; drawLab(); });
+['pointerup','pointercancel'].forEach(t=>pc.addEventListener(t,()=>drawing=false));
+const SP={ v:(r,c)=>c===5||c===6, h:(r,c)=>r===5||r===6, box:(r,c)=>r>=2&&r<=9&&c>=2&&c<=9&&(r===2||r===9||c===2||c===9), x:(r,c)=>r===c||r+c===11 };
+$$('[data-sp]').forEach(b=>b.onclick=()=>{ for(let r=0;r<LN;r++) for(let c=0;c<LN;c++) lab[r*LN+c]=SP[b.dataset.sp](r,c)?1:0; drawLab(); });
+$('#labClear').onclick=()=>{ lab.fill(0); drawLab(); };
+$$('#filterPick .btn').forEach(b=>b.onclick=()=>{ lf=b.dataset.f; drawLab(); });
+for(let r=0;r<LN;r++) for(let c=0;c<LN;c++) lab[r*LN+c]=SP.box(r,c)?1:0;
+drawLab();
+
+/* 도전 */
+const CI=[[0,9,0,0],[0,9,0,0],[0,9,0,0],[0,9,0,0]], CA=[[0,1,0],[0,1,0],[0,1,0]], CB=[[0,0,0],[1,1,1],[0,0,0]];
+$('#chIn').innerHTML=matHTML(CI); $('#chA').innerHTML=matHTML(CA); $('#chB').innerHTML=matHTML(CB);
+const inGrid=(id,n)=>[0,1].map(r=>'<tr>'+[0,1].map(c=>`<td><input type="number" id="${id}${r}${c}" aria-label="${r+1}행 ${c+1}열"></td>`).join('')+'</tr>').join('');
+$('#chOutA').innerHTML=inGrid('oa'); $('#chOutB').innerHTML=inGrid('ob');
+const ANS_A=POS.map(p=>conv(CI,CA,p[0],p[1])), ANS_B=POS.map(p=>conv(CI,CB,p[0],p[1]));
+$('#chCheck').onclick=()=>{ let ok=0;
+  POS.forEach((p,k)=>{ const a=$(`#oa${p[0]}${p[1]}`), b=$(`#ob${p[0]}${p[1]}`); const ga=a.value!==''&&+a.value===ANS_A[k], gb=b.value!==''&&+b.value===ANS_B[k]; mark(a,ga); mark(b,gb); ok+=ga+gb; });
+  const w=$('#chWho'); const gw=w.value==='A'; mark(w,gw); ok+=gw; st.ch=ok;
+  fb('chFb',ok===9, ok===9? '모두 맞혔어요! 필터 A는 세로선이 있는 왼쪽 자리에서 27로 크게 반응하고, 필터 B는 어디서나 9로 비슷해요. 필터마다 찾아내는 특징이 달라요.' : `9칸 중 ${ok}칸을 맞혔어요. 필터 값이 1인 칸만 더하면 돼요.`); };
+
+/* 풀링 */
+const PI=[[1,3,2,0],[4,6,1,5],[7,2,9,8],[0,1,3,4]];
+const quad=(r,c)=>'q'+((r>>1)*2+(c>>1));
+$('#poolIn').innerHTML=matHTML(PI,quad);
+$('#poolMax').innerHTML=[0,1].map(r=>'<tr>'+[0,1].map(c=>`<td class="q${r*2+c}"><input type="number" id="pm${r}${c}" aria-label="최댓값 ${r+1}행 ${c+1}열"></td>`).join('')+'</tr>').join('');
+$('#poolAvg').innerHTML=[0,1].map(r=>'<tr>'+[0,1].map(c=>`<td class="q${r*2+c}"><input type="number" step="0.5" id="pa${r}${c}" aria-label="평균 ${r+1}행 ${c+1}열"></td>`).join('')+'</tr>').join('');
+const PMAX=[6,5,7,9], PAVG=[3.5,2,2.5,6];
+$('#poolCheck').onclick=()=>{ let m=0,a=0;
+  POS.forEach((p,k)=>{ const e=$(`#pm${p[0]}${p[1]}`); const g=e.value!==''&&+e.value===PMAX[k]; mark(e,g); m+=g;
+    const f=$(`#pa${p[0]}${p[1]}`); if(f.value!==''){ const g2=Math.abs(+f.value-PAVG[k])<1e-6; mark(f,g2); a+=g2; } });
+  const sz=$('#poolSize'); const gs=sz.value!==''&&+sz.value===4; mark(sz,gs);
+  st.pool={m,a,size:gs};
+  fb('poolFb',m===4&&gs, (m===4&&gs? '최댓값 풀링 정답! 16칸이 4칸으로 줄었지만 각 영역의 가장 두드러진 값은 남았어요.' : `최댓값 ${m}/4칸, 크기 ${gs?'정답':'다시 생각해 보기'}.`) + (a? ` 평균 풀링은 ${a}/4칸 맞혔어요.`:'')); };
+
+/* ---------- 5. CNN 정리 ---------- */
+const LAYERS=['합성곱층','풀링층','완전 연결층'];
+const LQ=[['필터를 사용해 이미지의 지역적인 특징을 추출한다.',0],['중요한 정보는 남기면서 데이터의 크기를 줄인다.',1],['추출한 특징을 일렬로 만들어 받고, 이미지가 무엇인지 최종 분류한다.',2]];
+$('#layerQ').innerHTML='<tr><th>하는 일</th><th>층</th></tr>'+LQ.map((q,i)=>`<tr><td>${q[0]}</td><td><select id="lq${i}"><option value="">고르기</option>${LAYERS.map((l,j)=>`<option value="${j}">${l}</option>`).join('')}</select></td></tr>`).join('');
+const FEAT=['직선, 곡선 같은 경계선','눈, 코, 귀 같은 작은 특징','얼굴, 몸 같은 큰 특징'];
+$('#orderQ').innerHTML='<tr><th>필터</th><th>찾는 특징</th></tr>'+['첫 번째 필터','두 번째 필터','세 번째 필터'].map((n,i)=>`<tr><td>${n}</td><td><select id="oq${i}"><option value="">고르기</option>${FEAT.map((f,j)=>`<option value="${j}">${f}</option>`).join('')}</select></td></tr>`).join('');
+$('#cnnCheck').onclick=()=>{ let l=0,o=0; LQ.forEach((q,i)=>{ const s=$('#lq'+i); const g=s.value!==''&&+s.value===q[1]; mark(s,g); l+=g; });
+  [0,1,2].forEach(i=>{ const s=$('#oq'+i); const g=s.value!==''&&+s.value===i; mark(s,g); o+=g; });
+  st.cnn={l,o}; fb('cnnFb',l+o===6, l+o===6? '모두 맞혔어요! 앞쪽 층은 작고 단순한 특징을, 뒤쪽 층은 크고 복잡한 특징을 찾아요.' : `층의 역할 ${l}/3, 특징 순서 ${o}/3을 맞혔어요.`); };
+const SELF=['컴퓨터가 이미지를 픽셀 값과 RGB로 저장하는 방식을 설명할 수 있다.','이미지 분류, 객체 위치 식별, 객체 탐지, 이미지 분할을 구분할 수 있다.','합성곱 연산과 풀링을 직접 계산할 수 있다.','합성곱 신경망의 구현 방식을 설명할 수 있다.'];
+$('#selfChk').innerHTML=SELF.map((t,i)=>`<label><input type="checkbox" id="sc${i}"><span>${t}</span></label>`).join('');
+
+/* ---------- 6. 정리 ---------- */
+initSummary();
+/* ---------- 7. 저장 ---------- */
+$('#saveCard').onclick=()=>{
+  if(!summaryReady()) return;
+  const ink=[...lab].some(v=>v>0);
+  const pool=st.pool;
+  saveResult({ title:'필터 실험실 · 컴퓨터 비전 1차시 활동 결과', subtitle:'컴퓨터 비전의 이해와 합성곱 신경망 (교과서 102~105쪽)',
+    image: ink? {data:lab, n:LN, label:'필터 실험실에 그린 그림'} : null,
+    footer:'Ⅱ. 인공지능과 학습 · 2. 딥러닝 · 컴퓨터 비전 1차시',
+    sections:[
+      summarySection(),
+      {h:'활동 1  컴퓨터의 눈으로 보기', lines:[ `숫자 그림 칠하기: ${st.paint?'완성 (T 모양)':'완성하지 못함'}`, `RGB 색 맞히기: ${st.rgb===null?'하지 않음':st.rgb+' / 5'}`, `한 줄로 펼치면 사라지는 정보: ${orBlank(val('a1think'))}` ]},
+      {h:'활동 2  컴퓨터 비전 4분야', lines:[ st.field===null?'하지 않음':`${st.field} / 4 정답` ]},
+      {h:'활동 3  객체 탐지 체험', lines:[ `고른 이미지: ${orBlank(val('a3img'))}`, `탐지한 객체: ${orBlank(val('a3found'))}`, `탐지하지 못한 객체: ${orBlank(val('a3miss'))}`, `이유: ${orBlank(val('a3why'))}`, `해결 방법: ${orBlank(val('a3fix'))}` ]},
+      {h:'활동 4  합성곱과 풀링', lines:[ `합성곱 3단계: ${st.conv[2]?'○ 10':'풀지 못함'}   4단계: ${st.conv[3]?'○ 4':'풀지 못함'}`, `세로선 도전: ${st.ch===null?'하지 않음':st.ch+' / 9'}`, `풀링: ${pool? `최댓값 ${pool.m}/4, 평균 ${pool.a}/4, 크기 ${pool.size?'○':'×'}` : '하지 않음'}` ]},
+      {h:'활동 5  합성곱 신경망 정리', lines:[ st.cnn? `층의 역할 ${st.cnn.l}/3, 특징 순서 ${st.cnn.o}/3` : '확인하지 않음', `학습하며 만드는 것: ${orBlank(val('a5learn'))}`, `CNN Explainer: ${orBlank(val('a5exp'))}` ]},
+      {h:'성취도 자기 점검', lines: SELF.map((t,i)=>($('#sc'+i).checked?'☑ ':'☐ ')+t) }
+    ]}, '컴퓨터비전1차시'); };
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ drawLab(); });
+
+})();
+</script>
+</body>
+</html>
