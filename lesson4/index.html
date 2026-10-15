@@ -124,6 +124,14 @@ svg.dist{width:100%; height:auto; display:block; border:1px solid var(--grid); b
 .why > :not(summary){margin:10px 16px}
 .why ol, .why ul{padding-left:1.3em}
 .why li{margin:6px 0}
+.attach{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px}
+@media (max-width:560px){.attach{grid-template-columns:1fr}}
+.slot{border:2px dashed var(--ink); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:10px; background:var(--bg)}
+.slot > span{font-weight:500}
+.slot img{width:100%; max-height:260px; object-fit:contain; border-radius:4px; background:var(--panel)}
+.slot label.btn{display:inline-block}
+.vh{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.slot:focus-within label.btn{outline:3px solid var(--teal); outline-offset:2px}
 .warnbox{border-left:5px solid var(--warn); background:var(--warn-soft); padding:10px 14px; border-radius:6px; margin:10px 0; font-size:.95rem}
 </style>
 </head>
@@ -213,6 +221,13 @@ svg.dist{width:100%; height:auto; display:block; border:1px solid var(--grid); b
       <label class="field"><span>원하는 대로 나오지 않은 부분</span><input type="text" id="pBad" maxlength="120"></label>
     </div>
     <div id="p2Box" class="saved hidden"><b>두 번째 프롬프트</b><span id="p2Txt"></span></div>
+    <h3>만든 그림 첨부하기</h3>
+    <p class="note">이미지 생성 도구에서 만든 그림을 저장한 뒤 여기에 올려요. 첨부한 그림은 제출 이미지에 함께 들어가고, 어디에도 업로드되지 않아요.</p>
+    <div class="attach">
+      <div class="slot"><span>첫 번째 프롬프트로 만든 그림</span><img id="img1v" class="hidden" alt="첫 번째 결과 그림"><div class="row"><label class="btn" for="img1">그림 고르기</label><input type="file" id="img1" accept="image/*" class="vh"><button class="btn hidden" id="img1x">지우기</button></div></div>
+      <div class="slot"><span>두 번째 프롬프트로 만든 그림</span><img id="img2v" class="hidden" alt="두 번째 결과 그림"><div class="row"><label class="btn" for="img2">그림 고르기</label><input type="file" id="img2" accept="image/*" class="vh"><button class="btn hidden" id="img2x">지우기</button></div></div>
+    </div>
+    <div class="feedback bad hidden" id="imgErr"></div>
     <label class="field"><span>발견한 점: 프롬프트를 어떻게 바꾸었더니 결과가 나아졌나요?</span><textarea id="pFound" maxlength="300"></textarea></label>
   </section>
 
@@ -310,7 +325,13 @@ async function renderCard(o){
   const W=900, P=44, LH=29, BODY='18px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif', HEAD='26px "Do Hyeon","IBM Plex Sans KR",sans-serif';
   const meas=document.createElement('canvas').getContext('2d'); meas.font=BODY;
   const headH = o.image ? 250 : 210; let h=headH+10; const blocks=[];
-  o.sections.forEach(sec=>{ const lines=[]; sec.lines.forEach(l=>wrap(meas,l,W-2*P-24).forEach(w=>lines.push(w))); blocks.push({h:sec.h, lines}); h+=44+lines.length*LH+22; });
+  const loadImg=(src)=>new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; });
+  const TW=(W-2*P-24-20)/2, TH=380;
+  for(const sec of o.sections){ const lines=[]; sec.lines.forEach(l=>wrap(meas,l,W-2*P-24).forEach(w=>lines.push(w)));
+    let ims=[], imH=0;
+    if(sec.imgs && sec.imgs.length){ ims=(await Promise.all(sec.imgs.map(async it=>({im:await loadImg(it.src), label:it.label})))).filter(x=>x.im);
+      ims.forEach(x=>{ const sc=Math.min(TW/x.im.width, TH/x.im.height); x.w=x.im.width*sc; x.h=x.im.height*sc; imH=Math.max(imH,x.h); }); if(ims.length) imH+=34; }
+    blocks.push({h:sec.h, lines, ims, imH}); h+=44+lines.length*LH+imH+22; }
   h+=50;
   const c=document.createElement('canvas'); const dpr=2; c.width=W*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
   x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,h);
@@ -325,7 +346,9 @@ async function renderCard(o){
     x.font='15px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.textAlign='center'; x.fillText(o.image.label,dx+box/2,dy+box+22); x.textAlign='left'; }
   let y=headH; x.strokeStyle='#CFDAEA'; x.lineWidth=2; x.beginPath(); x.moveTo(P,y-14); x.lineTo(W-P,y-14); x.stroke();
   blocks.forEach(b=>{ x.fillStyle='#FFD43B'; x.fillRect(P,y+6,6,26); x.fillStyle='#17233B'; x.font=HEAD; x.fillText(b.h,P+16,y+30); y+=44;
-    x.font=BODY; b.lines.forEach(l=>{ x.fillStyle = /^\s*\d+\.\s*×/.test(l)? '#B8430B' : '#17233B'; x.fillText(l,P+16,y+20); y+=LH; }); y+=22; });
+    x.font=BODY; b.lines.forEach(l=>{ x.fillStyle = /^\s*\d+\.\s*×/.test(l)? '#B8430B' : '#17233B'; x.fillText(l,P+16,y+20); y+=LH; });
+    if(b.ims && b.ims.length){ b.ims.forEach((it,i)=>{ const ix=P+16+i*(TW+20); x.drawImage(it.im, ix, y+6, it.w, it.h); x.strokeStyle='#17233B'; x.lineWidth=1.5; x.strokeRect(ix, y+6, it.w, it.h); x.font='15px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.fillText(it.label, ix, y+6+it.h+22); }); y+=b.imH; x.font=BODY; }
+    y+=22; });
   x.font='14px "IBM Plex Sans KR",sans-serif'; x.fillStyle='#4A5A78'; x.fillText(o.footer,P,h-24);
   return c.toDataURL('image/png');
 }
@@ -347,7 +370,7 @@ function summarySection(){ const used=($('#sumMain')._used)||[]; return {h:'오�
 function summaryReady(){ if(val('sumMain')) return true; const err=$('#saveErr'); err.classList.remove('hidden'); err.innerHTML='‘오늘 배운 내용 정리’의 ①을 먼저 써 주세요. <a href="#sumMain">정리하러 가기</a>'; return false; }
 
 
-const st={round:0, acc:null, ended:false, ganQ:null, p1:'', p2:'', use:null};
+const st={round:0, acc:null, ended:false, ganQ:null, p1:'', p2:'', use:null, img1:null, img2:null};
 
 /* ---------- 1. GAN ---------- */
 const RM=7, RS=0.9; let gm, gs;
@@ -398,6 +421,16 @@ $('#pCopy').onclick=async()=>{ const t=compose(); if(!t) return; let ok=false; t
 $('#pSave1').onclick=()=>{ const t=compose(); if(!t) return; st.p1=t; $('#p1Txt').textContent=t; $('#p1Box').classList.remove('hidden'); $('#pMid').classList.remove('hidden'); $('#pSave2').disabled=false; };
 $('#pSave2').onclick=()=>{ const t=compose(); if(!t) return; st.p2=t; $('#p2Txt').textContent=t; $('#p2Box').classList.remove('hidden'); };
 
+function shrink(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onerror=rej; fr.onload=()=>{ const im=new Image(); im.onerror=rej; im.onload=()=>{ const m=900, sc=Math.min(1, m/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc); const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',0.86)); }; im.src=fr.result; }; fr.readAsDataURL(file); }); }
+['img1','img2'].forEach(k=>{
+  $('#'+k).addEventListener('change', async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const err=$('#imgErr');
+    if(!f.type.startsWith('image/')){ err.classList.remove('hidden'); err.textContent='그림 파일(jpg, png 등)만 올릴 수 있어요.'; e.target.value=''; return; }
+    try{ st[k]=await shrink(f); err.classList.add('hidden'); const v=$('#'+k+'v'); v.src=st[k]; v.classList.remove('hidden'); $('#'+k+'x').classList.remove('hidden'); }
+    catch(ex){ err.classList.remove('hidden'); err.textContent='그림을 읽지 못했어요. 다른 파일로 다시 골라 보세요.'; }
+    e.target.value=''; });
+  $('#'+k+'x').onclick=()=>{ st[k]=null; const v=$('#'+k+'v'); v.removeAttribute('src'); v.classList.add('hidden'); $('#'+k+'x').classList.add('hidden'); };
+});
+
 /* ---------- 3. 활용 ---------- */
 const TECH=['광학 문자 인식(OCR)','객체 탐지','얼굴 인식','얼굴 영상 생성'];
 const UQ=[['주차장에서 자동차 번호판을 읽어 주차비를 정산한다.',0],['식당 메뉴판의 글자를 읽어 음성으로 들려준다.',0],['도로 CCTV 영상으로 교통량을 분석한다.',1],['공항 X-ray 영상에서 소지 금지 물품을 찾는다.',1],['거리 뷰에서 지나가는 사람의 얼굴을 모자이크한다.',2],['스마트폰 잠금을 내 얼굴로 해제한다.',2],['영화에서 배우를 젊은 시절 모습으로 바꾼다.',3]];
@@ -432,7 +465,8 @@ $('#saveCard').onclick=()=>{
     sections:[
       summarySection(),
       {h:'활동 1  GAN', lines:[ st.round? `시뮬레이션 ${st.round}라운드, 감별자 정답률 ${Math.round(st.acc*100)}%${st.ended?' (학습 종료)':''}` : '시뮬레이션 하지 않음', g? `역할 ${g.r}/4, 학습 순서 ${g.s}/4` : '정리 문제 확인하지 않음', `학습 후 쓰는 것: ${orBlank(val('a1think'))}` ]},
-      {h:'활동 2  프롬프트', lines:[ `첫 번째: ${orBlank(st.p1)}`, `마음에 든 부분: ${orBlank(val('pGood'))}`, `아쉬운 부분: ${orBlank(val('pBad'))}`, `두 번째: ${orBlank(st.p2)}`, `발견한 점: ${orBlank(val('pFound'))}` ]},
+      {h:'활동 2  프롬프트', lines:[ `첫 번째: ${orBlank(st.p1)}`, `마음에 든 부분: ${orBlank(val('pGood'))}`, `아쉬운 부분: ${orBlank(val('pBad'))}`, `두 번째: ${orBlank(st.p2)}`, `발견한 점: ${orBlank(val('pFound'))}`, ...((st.img1||st.img2)?[]:['만든 그림: 첨부하지 않음']) ],
+        imgs:[ st.img1&&{src:st.img1,label:'첫 번째 프롬프트로 만든 그림'}, st.img2&&{src:st.img2,label:'두 번째 프롬프트로 만든 그림'} ].filter(Boolean) },
       {h:'활동 3  컴퓨터 비전 활용', lines:[ `내가 체험한 기술: ${orBlank(val('teamTech'))}`, `해 본 것: ${orBlank(val('teamDid'))}`, `특징: ${orBlank(val('teamFeat'))}`, `사례 맞히기: ${st.use===null?'확인하지 않음':st.use+' / '+UQ.length}` ]},
       {h:'활동 4  토의', lines:[ `해결할 수 있는 문제: ${orBlank(val('d_idea'))}`, ...DS.map((d,i)=>`상황 ${i+1}  문제: ${orBlank(val('dp'+i))} / 대책: ${orBlank(val('ds'+i))}`) ]},
       {h:'활동 5  주요 개념', lines: quizLines(Q, $('#quiz')._chosen)},
